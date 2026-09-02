@@ -30,7 +30,7 @@ jobs:
           channel: stable
 
       - name: Create Android project
-        run: flutter create . --platforms=android
+        run: flutter create . --project-name komprisma_kasir_v3 --platforms=android
 
       - name: Install dependencies
         run: flutter pub get
