@@ -1,0 +1,48 @@
+name: Build KOMPRISMA KASIR V3 APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract project
+        run: |
+          mkdir project
+          unzip -o KOMPRISMA_KASIR_V3_ANDROID_CLOUD_BUILD_READY.zip -d project
+          cp -r project/.gitignore .
+          cp -r project/pubspec.yaml .
+          cp -r project/lib .
+          cp -r project/test .
+          rm -rf project
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+
+      - name: Create Android project
+        run: flutter create . --platforms=android
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: KOMPRISMA-KASIR-V3-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
