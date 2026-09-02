@@ -16,7 +16,7 @@ jobs:
       - name: Extract project
         run: |
           mkdir project
-          unzip -o KOMPRISMA_KASIR_V3_ANDROID_PROFESSIONAL_MAX.zip -d project
+          unzip -o KOMPRISMA_KASIR_V3_ANDROID_CLOUD_BUILD_READY.zip -d project
           cp -r project/.gitignore .
           cp -r project/pubspec.yaml .
           cp -r project/lib .
