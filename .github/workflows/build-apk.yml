@@ -3,48 +3,144 @@ name: Build KOMPRISMA KASIR V3 APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Extract project
+      - name: Cari File ZIP Project
         run: |
-          mkdir project
-          ZIP_FILE=$(find . -maxdepth 1 -type f -name '*.zip' | head -n 1)
-echo "Menggunakan: $ZIP_FILE"
-unzip -o "$ZIP_FILE" -d project
-          cp -r project/.gitignore .
-          cp -r project/pubspec.yaml .
-          cp -r project/lib .
-          cp -r project/test .
-          rm -rf project
+          echo "=== DAFTAR FILE REPOSITORY ==="
+          find . -maxdepth 3 -type f -print
+
+          echo ""
+          echo "=== MENCARI FILE ZIP ==="
+
+          ZIP_FILE=$(find . -type f -iname "*.zip" \
+            ! -path "./.git/*" \
+            | head -n 1)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: File ZIP project tidak ditemukan!"
+            exit 1
+          fi
+
+          echo "ZIP ditemukan:"
+          echo "$ZIP_FILE"
+
+          echo "$ZIP_FILE" > zip_file.txt
+
+      - name: Extract Source Project
+        run: |
+          mkdir -p source
+
+          ZIP_FILE=$(cat zip_file.txt)
+
+          echo "Extracting:"
+          echo "$ZIP_FILE"
+
+          unzip -o "$ZIP_FILE" -d source
+
+          echo ""
+          echo "=== HASIL EXTRACT ==="
+          find source -maxdepth 5 -type f -print
+
+      - name: Cari Source Flutter
+        run: |
+          echo "=== MENCARI pubspec.yaml ==="
+
+          PUBSPEC=$(find source -type f -name "pubspec.yaml" | head -n 1)
+
+          if [ -z "$PUBSPEC" ]; then
+            echo "ERROR: pubspec.yaml tidak ditemukan!"
+            exit 1
+          fi
+
+          echo "pubspec ditemukan:"
+          echo "$PUBSPEC"
+
+          PROJECT_DIR=$(dirname "$PUBSPEC")
+
+          if [ ! -d "$PROJECT_DIR/lib" ]; then
+            echo "ERROR: Folder lib tidak ditemukan!"
+            exit 1
+          fi
+
+          echo "Folder source Flutter:"
+          echo "$PROJECT_DIR"
+
+          echo "$PROJECT_DIR" > flutter_source.txt
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5'
+          flutter-version: "3.24.5"
           channel: stable
+          cache: true
 
-      - name: Create Android project
-        run: flutter create . --project-name komprisma_kasir_v3 --platforms=android
+      - name: Buat Android Flutter Project
+        run: |
+          echo "=== MEMBUAT PROJECT ANDROID ==="
 
-      - name: Install dependencies
-        run: flutter pub get
+          flutter create \
+            --project-name komprisma_kasir_v3 \
+            --platforms android \
+            build_project
 
-      - name: Analyze
-        run: flutter analyze || true
-        
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Masukkan Source KOMPRISMA
+        run: |
+          SOURCE_DIR=$(cat flutter_source.txt)
+
+          echo "Source:"
+          echo "$SOURCE_DIR"
+
+          echo "=== COPY PUBSPEC ==="
+          cp "$SOURCE_DIR/pubspec.yaml" build_project/pubspec.yaml
+
+          echo "=== COPY LIB ==="
+          rm -rf build_project/lib
+          cp -r "$SOURCE_DIR/lib" build_project/lib
+
+          if [ -d "$SOURCE_DIR/test" ]; then
+            echo "=== COPY TEST ==="
+            rm -rf build_project/test
+            cp -r "$SOURCE_DIR/test" build_project/test
+          fi
+
+          echo ""
+          echo "=== PROJECT HASIL ==="
+          find build_project -maxdepth 2 -type f -print
+
+      - name: Install Dependencies
+        working-directory: build_project
+        run: |
+          flutter pub get
+
+      - name: Flutter Analyze
+        working-directory: build_project
+        run: |
+          flutter analyze || true
+
+      - name: Flutter Test
+        working-directory: build_project
+        run: |
+          flutter test || true
+
+      - name: Build APK Release
+        working-directory: build_project
+        run: |
+          flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: KOMPRISMA-KASIR-V3-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build_project/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
