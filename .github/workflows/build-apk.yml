@@ -39,9 +39,15 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease --stacktrace
 
+      - name: Locate APK
+        run: |
+          echo "Generated APK files:"
+          find android/app/build/outputs/apk -type f -name "*.apk" -print
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: KASIRA-Android-APK
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+          compression-level: 6
