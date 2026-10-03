@@ -23,18 +23,13 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Bootstrap or use lockfile
-        shell: bash
+      - name: Install dependencies
         run: |
-          if [ ! -f package-lock.json ]; then
-            npm install --package-lock-only
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore: bootstrap npm lockfile [skip ci]"
-            git push
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
           fi
-          npm ci
 
       - name: Build web
         run: npm run build
