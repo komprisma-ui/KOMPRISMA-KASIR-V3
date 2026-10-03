@@ -575,3 +575,153 @@ $$;
 
 revoke all on function public.create_sale_atomic(jsonb) from public;
 grant execute on function public.create_sale_atomic(jsonb) to authenticated;
+
+
+-- KASIRA Business Suite: accounting, assets, inventory register, HR and attendance
+create table if not exists public.accounts (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  code text not null,
+  name text not null,
+  account_type text not null check (account_type in ('asset','liability','equity','revenue','expense')),
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique(business_id, code)
+);
+
+create table if not exists public.journal_entries (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  outlet_id uuid references public.outlets(id) on delete set null,
+  entry_date date not null default current_date,
+  reference_type text,
+  reference_id uuid,
+  description text not null,
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.journal_lines (
+  id uuid primary key default gen_random_uuid(),
+  journal_id uuid not null references public.journal_entries(id) on delete cascade,
+  account_id uuid not null references public.accounts(id),
+  debit numeric(18,2) not null default 0 check (debit >= 0),
+  credit numeric(18,2) not null default 0 check (credit >= 0),
+  check (debit > 0 or credit > 0),
+  check (not (debit > 0 and credit > 0))
+);
+
+create table if not exists public.fixed_assets (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  outlet_id uuid references public.outlets(id) on delete set null,
+  name text not null,
+  category text not null,
+  acquisition_date date not null default current_date,
+  acquisition_cost numeric(18,2) not null default 0 check (acquisition_cost >= 0),
+  useful_life_months integer not null default 60 check (useful_life_months > 0),
+  residual_value numeric(18,2) not null default 0 check (residual_value >= 0),
+  status text not null default 'active' check (status in ('active','disposed','maintenance')),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.inventory_register (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  outlet_id uuid references public.outlets(id) on delete set null,
+  asset_tag text,
+  name text not null,
+  category text,
+  quantity numeric(18,3) not null default 1 check (quantity >= 0),
+  location text,
+  condition text default 'good',
+  created_at timestamptz not null default now(),
+  unique(business_id, asset_tag)
+);
+
+create table if not exists public.employees (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  outlet_id uuid references public.outlets(id) on delete set null,
+  employee_no text,
+  name text not null,
+  position text,
+  phone text,
+  join_date date,
+  base_salary numeric(18,2) not null default 0 check (base_salary >= 0),
+  status text not null default 'active' check (status in ('active','inactive')),
+  created_at timestamptz not null default now(),
+  unique(business_id, employee_no)
+);
+
+create table if not exists public.attendance (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  employee_id uuid not null references public.employees(id) on delete cascade,
+  attendance_date date not null,
+  status text not null check (status in ('present','leave','sick','absent')),
+  check_in timestamptz,
+  check_out timestamptz,
+  note text,
+  created_at timestamptz not null default now(),
+  unique(employee_id, attendance_date)
+);
+
+create table if not exists public.payroll (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  employee_id uuid not null references public.employees(id),
+  period_start date not null,
+  period_end date not null,
+  gross_salary numeric(18,2) not null default 0 check (gross_salary >= 0),
+  deductions numeric(18,2) not null default 0 check (deductions >= 0),
+  net_salary numeric(18,2) not null default 0 check (net_salary >= 0),
+  status text not null default 'draft' check (status in ('draft','approved','paid')),
+  created_at timestamptz not null default now(),
+  check (period_end >= period_start)
+);
+
+alter table public.accounts enable row level security;
+alter table public.journal_entries enable row level security;
+alter table public.journal_lines enable row level security;
+alter table public.fixed_assets enable row level security;
+alter table public.inventory_register enable row level security;
+alter table public.employees enable row level security;
+alter table public.attendance enable row level security;
+alter table public.payroll enable row level security;
+
+drop policy if exists accounts_member_all on public.accounts;
+create policy accounts_member_all on public.accounts for all using (public.is_business_member(business_id)) with check (public.is_business_member(business_id));
+
+drop policy if exists journal_entries_member_all on public.journal_entries;
+create policy journal_entries_member_all on public.journal_entries for all using (public.is_business_member(business_id)) with check (public.is_business_member(business_id));
+
+drop policy if exists journal_lines_member_all on public.journal_lines;
+create policy journal_lines_member_all on public.journal_lines for all using (
+  exists(select 1 from public.journal_entries j where j.id=journal_id and public.is_business_member(j.business_id))
+) with check (
+  exists(select 1 from public.journal_entries j where j.id=journal_id and public.is_business_member(j.business_id))
+);
+
+drop policy if exists fixed_assets_member_all on public.fixed_assets;
+create policy fixed_assets_member_all on public.fixed_assets for all using (public.is_business_member(business_id)) with check (public.is_business_member(business_id));
+
+drop policy if exists inventory_register_member_all on public.inventory_register;
+create policy inventory_register_member_all on public.inventory_register for all using (public.is_business_member(business_id)) with check (public.is_business_member(business_id));
+
+drop policy if exists employees_member_all on public.employees;
+create policy employees_member_all on public.employees for all using (public.is_business_member(business_id)) with check (public.is_business_member(business_id));
+
+drop policy if exists attendance_member_all on public.attendance;
+create policy attendance_member_all on public.attendance for all using (public.is_business_member(business_id)) with check (public.is_business_member(business_id));
+
+drop policy if exists payroll_member_all on public.payroll;
+create policy payroll_member_all on public.payroll for all using (public.is_business_member(business_id)) with check (public.is_business_member(business_id));
+
+create index if not exists idx_journal_entries_business_date on public.journal_entries(business_id,entry_date);
+create index if not exists idx_journal_lines_journal on public.journal_lines(journal_id);
+create index if not exists idx_assets_business on public.fixed_assets(business_id);
+create index if not exists idx_inventory_register_business on public.inventory_register(business_id);
+create index if not exists idx_employees_business on public.employees(business_id);
+create index if not exists idx_attendance_employee_date on public.attendance(employee_id,attendance_date);
+create index if not exists idx_payroll_business_period on public.payroll(business_id,period_start,period_end);
