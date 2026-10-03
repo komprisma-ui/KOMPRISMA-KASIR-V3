@@ -102,7 +102,7 @@ function App(){
         business_id:cloud.businessId,outlet_id:cloud.outletId,customer_id:customer?.id||null,
         invoice_no:number,subtotal,discount,tax,total:grand,payment_method:paymentMap[d.payment]||"cash",
         paid_amount:paid,change_amount:change,
-        items:items.map(i=>({product_id:i.id,quantity:i.qty,unit_price:i.price,discount:0,total:i.price*i.qty}))
+        items:items.map((i,idx)=>{const line=i.price*i.qty;const share=subtotal?discount*line/subtotal:0;const itemDiscount=idx===items.length-1?Math.max(0,discount-items.slice(0,-1).reduce((a,x)=>a+(subtotal?discount*(x.price*x.qty)/subtotal:0),0)):share;return{product_id:i.id,quantity:i.qty,unit_price:i.price,discount:itemDiscount,total:line-itemDiscount}})
       };
       const {data:saleId,error}=await supabase.rpc("create_sale_atomic",{payload});
       if(error){alert("Transaksi cloud gagal: "+error.message);return;}
