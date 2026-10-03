@@ -1,7 +1,7 @@
 {
   "name": "kasira-pos",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "build:android": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
     "cap:sync": "npx cap sync",
-    "test:smoke": "vite build"
+    "test:smoke": "npm run build",
+    "audit:syntax": "npm run build"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
