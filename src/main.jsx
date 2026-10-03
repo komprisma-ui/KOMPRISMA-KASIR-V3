@@ -19,10 +19,33 @@ const uid=()=>globalThis.crypto?.randomUUID?.()||("k_"+Date.now().toString(36)+"
 const clampMoney=(value,max)=>Math.min(Math.max(0,safeNumber(value)),Math.max(0,max));
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
+const DEFAULT_ACCOUNTS=[
+ {id:"coa-1000",code:"1-1000",name:"Kas",type:"Aset"},
+ {id:"coa-1100",code:"1-1100",name:"Bank",type:"Aset"},
+ {id:"coa-1200",code:"1-1200",name:"Persediaan",type:"Aset"},
+ {id:"coa-1500",code:"1-1500",name:"Aset Tetap",type:"Aset"},
+ {id:"coa-2000",code:"2-1000",name:"Hutang Usaha",type:"Kewajiban"},
+ {id:"coa-3000",code:"3-1000",name:"Modal",type:"Modal"},
+ {id:"coa-4000",code:"4-1000",name:"Penjualan",type:"Pendapatan"},
+ {id:"coa-4200",code:"4-2000",name:"Pendapatan Lain",type:"Pendapatan"},
+ {id:"coa-5000",code:"5-1000",name:"HPP",type:"Beban"},
+ {id:"coa-5200",code:"5-2000",name:"Beban Operasional",type:"Beban"}
+];
+const postJournal=(setJournal,description,lines,source="automatic",referenceId=null)=>{
+ const valid=lines.filter(x=>Number(x.debit||0)>0||Number(x.credit||0)>0);
+ if(!valid.length)return;
+ const debit=valid.reduce((a,x)=>a+Number(x.debit||0),0),credit=valid.reduce((a,x)=>a+Number(x.credit||0),0);
+ if(Math.abs(debit-credit)>0.005)throw new Error("Jurnal tidak seimbang.");
+ const now=new Date().toISOString(),batch=uid();
+ setJournal(x=>[...valid.map((line,i)=>({id:uid(),batchId:batch,date:now,description,account:line.account,debit:Number(line.debit||0),credit:Number(line.credit||0),source,referenceId,side:i})),...x]);
+};
+
 const nav=[["Dashboard",LayoutDashboard],["Kasir",ShoppingCart],["Produk",Package],["Stok",Boxes],["Pembelian",Truck],["Pelanggan",Users],["Transaksi",Receipt],["Laporan",BarChart3],["Akuntansi",Calculator],["Aset",Landmark],["Inventaris",Boxes],["Karyawan",UserCog],["Absensi",CheckCircle2],["Kas",Landmark],["Retur",RotateCcw],["Pengaturan",Settings]];
 
 function App(){
- const[online,setOnline]=useState(navigator.onLine),[page,setPage]=useState("Dashboard"),[products,setProducts]=useState(()=>load("kasira_products",seed)),[sales,setSales]=useState(()=>load("kasira_sales",[])),[customers,setCustomers]=useState(()=>load("kasira_customers",[])),[purchases,setPurchases]=useState(()=>load("kasira_purchases",[])),[cash,setCash]=useState(()=>load("kasira_cash",[])),[returns,setReturns]=useState(()=>load("kasira_returns",[])),[settings,setSettings]=useState(()=>load("kasira_settings",{store:"Toko Utama",tax:0,receiptFooter:"Terima kasih atas kunjungan Anda."})),[cart,setCart]=useState([]),[q,setQ]=useState(""),[cat,setCat]=useState("Semua"),[mobile,setMobile]=useState(false),[modal,setModal]=useState(null),[customer,setCustomer]=useState(null);
+ const[online,setOnline]=useState(navigator.onLine),[page,setPage]=useState("Dashboard"),[products,setProducts]=useState(()=>load("kasira_products",seed)),[sales,setSales]=useState(()=>load("kasira_sales",[])),[customers,setCustomers]=useState(()=>load("kasira_customers",[])),[purchases,setPurchases]=useState(()=>load("kasira_purchases",[])),[cash,setCash]=useState(()=>load("kasira_cash",[])),[returns,setReturns]=useState(()=>load("kasira_returns",[])),[journal,setJournal]=useState(()=>load("kasira_journal",[])),[accounts,setAccounts]=useState(()=>load("kasira_accounts",DEFAULT_ACCOUNTS)),[expenses,setExpenses]=useState(()=>load("kasira_expenses",[])),[payroll,setPayroll]=useState(()=>load("kasira_payroll",[])),[assets,setAssets]=useState(()=>load("kasira_assets",[])),[inventories,setInventories]=useState(()=>load("kasira_inventories",[])),[employees,setEmployees]=useState(()=>load("kasira_employees",[])),[attendance,setAttendance]=useState(()=>load("kasira_attendance",[])),[settings,setSettings]=useState(()=>load("kasira_settings",{store:"Toko Utama",tax:0,receiptFooter:"Terima kasih atas kunjungan Anda."})),[cart,setCart]=useState([]),[q,setQ]=useState(""),[cat,setCat]=useState("Semua"),[mobile,setMobile]=useState(false),[modal,setModal]=useState(null),[customer,setCustomer]=useState(null);
+ const checkoutLock=useRef(false);
  useEffect(()=>{const on=()=>setOnline(true),off=()=>setOnline(false);window.addEventListener("online",on);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off)}},[]);useEffect(()=>save("kasira_products",products),[products]);useEffect(()=>save("kasira_sales",sales),[sales]);useEffect(()=>save("kasira_customers",customers),[customers]);useEffect(()=>save("kasira_purchases",purchases),[purchases]);useEffect(()=>save("kasira_cash",cash),[cash]);useEffect(()=>save("kasira_returns",returns),[returns]);useEffect(()=>save("kasira_journal",journal),[journal]);useEffect(()=>save("kasira_accounts",accounts),[accounts]);useEffect(()=>save("kasira_expenses",expenses),[expenses]);useEffect(()=>save("kasira_payroll",payroll),[payroll]);useEffect(()=>save("kasira_assets",assets),[assets]);useEffect(()=>save("kasira_inventories",inventories),[inventories]);useEffect(()=>save("kasira_employees",employees),[employees]);useEffect(()=>save("kasira_attendance",attendance),[attendance]);useEffect(()=>save("kasira_settings",settings),[settings]);
  const scanBuffer=useRef(""),scanTimer=useRef(null);
  useEffect(()=>{const onKey=e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();document.getElementById("kasira-pos-search")?.focus();return}const t=e.target;if(t&&["INPUT","TEXTAREA","SELECT"].includes(t.tagName))return;if(e.key==="Enter"){const code=scanBuffer.current.trim();scanBuffer.current="";if(code){const p=products.find(x=>String(x.barcode||"")===code||String(x.sku||"").toLowerCase()===code.toLowerCase());if(p)add(p);else alert("Barcode/SKU tidak ditemukan: "+code);}return}if(e.key.length===1){scanBuffer.current+=e.key;clearTimeout(scanTimer.current);scanTimer.current=setTimeout(()=>{scanBuffer.current=""},350)}};window.addEventListener("keydown",onKey);return()=>{window.removeEventListener("keydown",onKey);clearTimeout(scanTimer.current)}},[products]);
@@ -30,30 +53,40 @@ function App(){
  const add=p=>setCart(c=>{let x=c.find(i=>i.id===p.id);return x?c.map(i=>i.id===p.id?{...i,qty:Math.min(i.qty+1,p.stock)}:i):[...c,{...p,qty:1}]});
  const change=(id,d)=>setCart(c=>c.map(i=>{let p=products.find(x=>x.id===i.id);return i.id===id?{...i,qty:Math.max(0,Math.min(i.qty+d,p?.stock||999))}:i}).filter(i=>i.qty));
  const checkout=d=>{
+   if(checkoutLock.current)return;
    if(!cart.length)return alert("Keranjang kosong.");
-   const now=Date.now(), number="TRX-"+String(now).slice(-8)+"-"+Math.random().toString(36).slice(2,5).toUpperCase();
-   const subtotal=cart.reduce((a,i)=>a+safeNumber(i.price)*safeNumber(i.qty),0);
-   const discount=clampMoney(d.discount,subtotal);
-   const taxRate=Math.min(100,safeNumber(d.tax));
-   const tax=Math.round((subtotal-discount)*taxRate/100);
-   const total=subtotal-discount+tax;
-   const paid=d.payment==="Tunai"?safeNumber(d.paid):total;
-   if(paid<total)return alert("Nominal pembayaran kurang.");
-   const change=d.payment==="Tunai"?paid-total:0;
-   const items=cart.map(i=>({...i,id:uid(),qty:safeNumber(i.qty,1),price:safeNumber(i.price),cost:safeNumber(i.cost)}));
-   for(const item of items){const p=products.find(x=>x.id===item.id);if(!p||item.qty>p.stock)return alert("Stok "+(p?.name||item.name)+" tidak mencukupi.");}
-   const sale={id:uid(),number,at:new Date().toISOString(),items,subtotal,discount,tax,total,payment:d.payment,paid,change,customerId:customer?.id||null,status:"paid"};
-   setSales(s=>[sale,...s]);
-   setProducts(ps=>ps.map(p=>{const i=items.find(x=>x.id===p.id);return i?{...p,stock:p.stock-i.qty}:p}));
-   if(d.payment==="Tunai")setCash(cs=>[{id:uid(),at:new Date().toISOString(),type:"Masuk",amount:total,note:"Penjualan "+sale.number,refId:sale.id},...cs]);
-   if(customer)setCustomers(cs=>cs.map(c=>c.id===customer.id?{...c,points:(c.points||0)+Math.floor(total/10000),totalSpent:(c.totalSpent||0)+total}:c));
-   setCart([]);setCustomer(null);setModal({type:"receipt",sale});
- };
- const exportData=()=>{let d={version:2,exportedAt:new Date().toISOString(),products,sales,customers,purchases,cash,returns,settings},a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="KASIRA-backup.json";a.click()};
- const importData=e=>{let f=e.target.files?.[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);const arr=["products","sales","customers","purchases","cash","returns"];if(!d||d.version!==2||!arr.every(k=>Array.isArray(d[k]))||!d.settings||typeof d.settings!=="object")throw new Error("invalid");if(!confirm("Pulihkan backup KASIRA ini? Data aktif akan diganti."))return;setProducts(d.products);setSales(d.sales);setCustomers(d.customers);setPurchases(d.purchases);setCash(d.cash);setReturns(d.returns);setSettings(d.settings);alert("Backup berhasil dipulihkan.")}catch{alert("Backup tidak valid atau bukan backup KASIRA v2.")}finally{e.target.value=""}};r.readAsText(f)};
+   checkoutLock.current=true;
+   try{
+    const now=Date.now(),number="TRX-"+String(now).slice(-8)+"-"+Math.random().toString(36).slice(2,5).toUpperCase();
+    const subtotal=cart.reduce((a,i)=>a+safeNumber(i.price)*safeNumber(i.qty),0);
+    const discount=clampMoney(d.discount,subtotal);
+    const taxRate=Math.min(100,safeNumber(d.tax));
+    const tax=Math.round((subtotal-discount)*taxRate/100);
+    const grand=subtotal-discount+tax;
+    const paid=d.payment==="Tunai"?safeNumber(d.paid):grand;
+    if(paid<grand)return alert("Nominal pembayaran kurang.");
+    const change=d.payment==="Tunai"?paid-grand:0;
+    const items=cart.map(i=>({...i,id:uid(),qty:safeNumber(i.qty,1),price:safeNumber(i.price),cost:safeNumber(i.cost)}));
+    for(const item of items){const p=products.find(x=>x.id===item.id);if(!p||item.qty>p.stock)return alert("Stok "+(p?.name||item.name)+" tidak mencukupi.");}
+    const sale={id:uid(),number,at:new Date().toISOString(),items,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"paid"};
+    setSales(x=>[sale,...x]);
+    setProducts(ps=>ps.map(p=>{const i=items.find(x=>x.id===p.id);return i?{...p,stock:p.stock-i.qty}:p}));
+    if(d.payment==="Tunai")setCash(cs=>[{id:uid(),at:new Date().toISOString(),type:"Masuk",amount:grand,note:"Penjualan "+sale.number,refId:sale.id},...cs]);
+    const hpp=items.reduce((a,i)=>a+safeNumber(i.cost)*safeNumber(i.qty),0);
+    postJournal(setJournal,"Penjualan "+sale.number,[
+      {account:d.payment==="Tunai"?"Kas":d.payment==="Transfer"?"Bank":"Kas",debit:grand,credit:0},
+      {account:"Penjualan",debit:0,credit:Math.max(0,subtotal-discount)},
+      {account:"HPP",debit:hpp,credit:0},
+      {account:"Persediaan",debit:0,credit:hpp}
+    ],"sale",sale.id);
+    if(customer)setCustomers(cs=>cs.map(c=>c.id===customer.id?{...c,points:(c.points||0)+Math.floor(grand/10000),totalSpent:(c.totalSpent||0)+grand}:c));
+    setCart([]);setCustomer(null);setModal({type:"receipt",sale});
+   }finally{checkoutLock.current=false}
+ };\n const exportData=()=>{let d={version:3,exportedAt:new Date().toISOString(),products,sales,customers,purchases,cash,returns,journal,accounts,expenses,payroll,assets,inventories,employees,attendance,settings},a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="KASIRA-backup.json";a.click()};
+ const importData=e=>{let f=e.target.files?.[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);const arr=["products","sales","customers","purchases","cash","returns"];if(!d||!(d.version===2||d.version===3)||!arr.every(k=>Array.isArray(d[k]))||!d.settings||typeof d.settings!=="object")throw new Error("invalid");if(!confirm("Pulihkan backup KASIRA ini? Data aktif akan diganti."))return;setProducts(d.products);setSales(d.sales);setCustomers(d.customers);setPurchases(d.purchases);setCash(d.cash);setReturns(d.returns);setSettings(d.settings);alert("Backup berhasil dipulihkan.")}catch{alert("Backup tidak valid atau bukan backup KASIRA v2.")}finally{e.target.value=""}};r.readAsText(f)};
  return <div className="app">
  <header className="header"><div className="brand"><div className="brandIcon"><img src="/kasira-icon.svg"/></div><div><b>KASIRA</b><small>Professional Point of Sale</small></div></div><div className="headerRight"><span className={online?"status":"status offline"}><i/> {online?"Online":"Offline"}</span><button className="iconBtn" onClick={()=>setModal({type:"notifications"})}><Bell size={19}/>{low.length>0&&<em className="notifyDot"/>}</button><div className="avatar">A</div><div className="userName"><b>Admin</b><small>Owner • {settings.store}</small></div></div><button className="menuBtn" onClick={()=>setMobile(!mobile)}>{mobile?<X/>:<Menu/>}</button></header>
- <aside className={mobile?"open":""}><div><div className="outlet"><div className="outletMark">K</div><div><b>{settings.store}</b><small>Outlet aktif</small></div><ChevronRight size={16}/></div><nav>{nav.map(([n,I])=><button className={page===n?"active":""} onClick={()=>{setPage(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span>{n==="Stok"&&low.length>0&&<em>{low.length}</em>}</button>)}</nav></div><div className="sideFoot"><div className="cloud"><Database size={16}/><span><b>Mode Offline</b><small>Data tersimpan lokal</small></span><i/></div><small>v0.4 Professional</small></div></aside>
+ <aside className={mobile?"open":""}><div><div className="outlet"><div className="outletMark">K</div><div><b>{settings.store}</b><small>Outlet aktif</small></div><ChevronRight size={16}/></div><nav>{nav.map(([n,I])=><button className={page===n?"active":""} onClick={()=>{setPage(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span>{n==="Stok"&&low.length>0&&<em>{low.length}</em>}</button>)}</nav></div><div className="sideFoot"><div className="cloud"><Database size={16}/><span><b>Mode Offline</b><small>Data tersimpan lokal</small></span><i/></div><small>v0.4.2 Hardening</small></div></aside>
  <main>
  {page==="Dashboard"&&<Dashboard omzet={omzet} sales={sales} products={products} customers={customers} low={low} setPage={setPage}/>}
  {page==="Kasir"&&<POS products={products} filtered={filtered} cats={cats} cat={cat} setCat={setCat} q={q} setQ={setQ} cart={cart} total={total} add={add} change={change} setCart={setCart} setModal={setModal} customer={customer} setCustomer={setCustomer} customers={customers}/>}
@@ -91,7 +124,7 @@ function POS({products,filtered,cats,cat,setCat,q,setQ,cart,total,add,change,set
 function Payment({total,settings,close,checkout}){
  const[discount,setDiscount]=useState(0),[tax,setTax]=useState(Number(settings.tax)||0),[method,setMethod]=useState("Tunai"),[paid,setPaid]=useState(total);let disc=clampMoney(discount,total),taxRate=Math.min(100,Math.max(0,safeNumber(tax))),taxVal=Math.round((total-disc)*taxRate/100),grand=total-disc+taxVal,change=method==="Tunai"?Math.max(0,safeNumber(paid)-grand):0;
  useEffect(()=>setPaid(grand),[grand]);
- return <div className="modalBackdrop"><div className="modal paymentModal"><button className="modalClose" onClick={close}><X/></button><span className="eyebrow">CHECKOUT AMAN</span><h2>Konfirmasi Pembayaran</h2><div className="paymentTotal">{money(grand)}</div><div className="payMethods">{[["Tunai",Wallet],["Kartu",CreditCard],["QRIS",Smartphone],["Transfer",ArrowUpRight]].map(([n,I])=><button className={method===n?"selected":""} onClick={()=>setMethod(n)} key={n}><I/> {n}</button>)}</div><div className="twoInputs"><label>Diskon<input type="number" min="0" max={total} value={discount} onChange={e=>setDiscount(e.target.value)}/></label><label>Pajak %<input type="number" min="0" max="100" value={tax} onChange={e=>setTax(e.target.value)}/></label></div>{method==="Tunai"&&<label>Nominal diterima<input type="number" value={paid} onChange={e=>setPaid(e.target.value)}/></label>}<div className="calcRows"><span>Subtotal <b>{money(total)}</b></span><span>Diskon <b>- {money(disc)}</b></span><span>Pajak <b>+ {money(taxVal)}</b></span><strong>Kembalian <b>{money(change)}</b></strong></div><button className="pay" onClick={()=>{checkout({subtotal:total,discount:disc,tax:taxVal,total:grand,payment:method,paid:Number(paid)||grand,change})}}><CheckCircle2 size={17}/> Selesaikan Transaksi</button></div></div>
+ return <div className="modalBackdrop"><div className="modal paymentModal"><button className="modalClose" onClick={close}><X/></button><span className="eyebrow">CHECKOUT AMAN</span><h2>Konfirmasi Pembayaran</h2><div className="paymentTotal">{money(grand)}</div><div className="payMethods">{[["Tunai",Wallet],["Kartu",CreditCard],["QRIS",Smartphone],["Transfer",ArrowUpRight]].map(([n,I])=><button className={method===n?"selected":""} onClick={()=>setMethod(n)} key={n}><I/> {n}</button>)}</div><div className="twoInputs"><label>Diskon<input type="number" min="0" max={total} value={discount} onChange={e=>setDiscount(e.target.value)}/></label><label>Pajak %<input type="number" min="0" max="100" value={tax} onChange={e=>setTax(e.target.value)}/></label></div>{method==="Tunai"&&<label>Nominal diterima<input type="number" value={paid} onChange={e=>setPaid(e.target.value)}/></label>}<div className="calcRows"><span>Subtotal <b>{money(total)}</b></span><span>Diskon <b>- {money(disc)}</b></span><span>Pajak <b>+ {money(taxVal)}</b></span><strong>Kembalian <b>{money(change)}</b></strong></div><button className="pay" onClick={()=>{checkout({subtotal:total,discount:disc,tax:taxRate,total:grand,payment:method,paid:Number(paid)||grand,change})}}><CheckCircle2 size={17}/> Selesaikan Transaksi</button></div></div>
 }
 function ReceiptModal({sale,settings,close}){useEffect(()=>{document.body.classList.add("printing-ready");return()=>document.body.classList.remove("printing-ready")},[]);return <div className="modalBackdrop receiptOverlay"><div className="modal receiptModal"><button className="modalClose" onClick={close}><X/></button><div className="receipt"><div className="receiptBrand">KASIRA</div><b>{settings.store}</b><small>{sale.number} • {new Date(sale.at).toLocaleString("id-ID")}</small><hr/>{sale.items.map(i=><div key={i.id}><span>{i.name} × {i.qty}</span><b>{money(i.price*i.qty)}</b></div>)}<hr/><div><span>Subtotal</span><b>{money(sale.subtotal)}</b></div>{sale.discount>0&&<div><span>Diskon</span><b>- {money(sale.discount)}</b></div>}{sale.tax>0&&<div><span>Pajak</span><b>{money(sale.tax)}</b></div>}<div className="receiptGrand"><span>Total</span><b>{money(sale.total)}</b></div><div><span>{sale.payment}</span><b>{money(sale.paid)}</b></div><div><span>Kembalian</span><b>{money(sale.change)}</b></div><hr/><small>{settings.receiptFooter}</small></div><div className="receiptActions"><button className="ghost" onClick={()=>window.print()}><Printer size={16}/> Cetak</button><button className="primary" onClick={close}>Selesai</button></div></div></div>}
 function Notifications({low,close}){return <div className="modalBackdrop"><div className="modal"><button className="modalClose" onClick={close}><X/></button><span className="eyebrow">ALERT CENTER</span><h2>Peringatan Stok</h2>{low.length?low.map(p=><div className="notice" key={p.id}><AlertTriangle size={17}/><div><b>{p.name}</b><small>{p.stock} tersisa • minimum {p.minStock}</small></div></div>):<div className="empty"><CheckCircle2 size={30}/><b>Semua stok aman.</b></div>}</div></div>}
