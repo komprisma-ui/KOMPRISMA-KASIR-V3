@@ -175,7 +175,7 @@ returns boolean language sql stable security definer set search_path=''
 as $ select exists (
   select 1 from public.memberships m
   where m.business_id=target_business and m.user_id=auth.uid()
-); $$;
+); $;
 
 create or replace function public.is_business_manager(target_business uuid)
 returns boolean language sql stable security definer set search_path=''
@@ -468,3 +468,106 @@ for each row execute function public.validate_purchase_item_business();
 
 create index if not exists idx_sale_items_sale on public.sale_items(sale_id);
 create index if not exists idx_purchase_items_purchase on public.purchase_items(purchase_id);
+
+
+-- Atomic sale primitive for the cloud-connected POS.
+-- The client should call this RPC instead of independently mutating sale,
+-- sale_items, stock and cash when Supabase sync is enabled.
+create or replace function public.create_sale_atomic(payload jsonb)
+returns uuid
+language plpgsql
+security invoker
+set search_path=''
+as $$
+declare
+  v_sale_id uuid;
+  v_business_id uuid := (payload->>'business_id')::uuid;
+  v_outlet_id uuid := (payload->>'outlet_id')::uuid;
+  v_customer_id uuid := nullif(payload->>'customer_id','')::uuid;
+  v_invoice text := payload->>'invoice_no';
+  v_subtotal numeric := coalesce((payload->>'subtotal')::numeric,0);
+  v_discount numeric := coalesce((payload->>'discount')::numeric,0);
+  v_tax numeric := coalesce((payload->>'tax')::numeric,0);
+  v_total numeric := coalesce((payload->>'total')::numeric,0);
+  v_payment text := coalesce(payload->>'payment_method','cash');
+  v_paid numeric := coalesce((payload->>'paid_amount')::numeric,0);
+  v_change numeric := coalesce((payload->>'change_amount')::numeric,0);
+  v_item jsonb;
+  v_stock numeric;
+begin
+  if not public.has_business_role(v_business_id, array['owner','manager','cashier']) then
+    raise exception 'not authorized for business';
+  end if;
+  if not public.is_outlet_member(v_outlet_id) then
+    raise exception 'outlet is not accessible';
+  end if;
+  if exists(select 1 from public.sales where business_id=v_business_id and invoice_no=v_invoice) then
+    raise exception 'duplicate invoice';
+  end if;
+  if v_subtotal < 0 or v_discount < 0 or v_discount > v_subtotal
+     or v_tax < 0 or v_total < 0 or v_paid < 0 or v_change < 0 then
+    raise exception 'invalid sale amounts';
+  end if;
+
+  insert into public.sales(
+    business_id,outlet_id,cashier_id,customer_id,invoice_no,
+    subtotal,discount,tax,total,payment_method,paid_amount,change_amount,status
+  ) values (
+    v_business_id,v_outlet_id,auth.uid(),v_customer_id,v_invoice,
+    v_subtotal,v_discount,v_tax,v_total,v_payment,v_paid,v_change,'paid'
+  ) returning id into v_sale_id;
+
+  for v_item in select * from jsonb_array_elements(coalesce(payload->'items','[]'::jsonb)) loop
+    if (v_item->>'product_id') is null then raise exception 'missing product_id'; end if;
+    if coalesce((v_item->>'quantity')::numeric,0) <= 0 then raise exception 'invalid quantity'; end if;
+    if coalesce((v_item->>'unit_price')::numeric,0) < 0 then raise exception 'invalid unit price'; end if;
+
+    select quantity into v_stock
+    from public.product_stocks
+    where outlet_id=v_outlet_id and product_id=(v_item->>'product_id')::uuid
+    for update;
+
+    if coalesce(v_stock,0) < (v_item->>'quantity')::numeric then
+      raise exception 'insufficient stock';
+    end if;
+
+    if not exists(
+      select 1 from public.products p
+      where p.id=(v_item->>'product_id')::uuid and p.business_id=v_business_id and p.active
+    ) then raise exception 'product is not in business'; end if;
+
+    insert into public.sale_items(
+      sale_id,product_id,quantity,unit_price,discount,total
+    ) values (
+      v_sale_id,(v_item->>'product_id')::uuid,
+      (v_item->>'quantity')::numeric,(v_item->>'unit_price')::numeric,
+      coalesce((v_item->>'discount')::numeric,0),
+      coalesce((v_item->>'total')::numeric,0)
+    );
+
+    update public.product_stocks
+    set quantity=quantity-(v_item->>'quantity')::numeric,updated_at=now()
+    where outlet_id=v_outlet_id and product_id=(v_item->>'product_id')::uuid;
+  end loop;
+
+  if v_payment = 'cash' then
+    insert into public.cash_transactions(
+      business_id,outlet_id,user_id,type,amount,description
+    ) values (
+      v_business_id,v_outlet_id,auth.uid(),'in',v_total,'Penjualan '||v_invoice
+    );
+  end if;
+
+  insert into public.audit_logs(
+    business_id,user_id,action,entity,entity_id,metadata
+  ) values (
+    v_business_id,auth.uid(),'sale.create','sales',v_sale_id,
+    jsonb_build_object('invoice_no',v_invoice,'total',v_total,'payment_method',v_payment)
+  );
+
+  return v_sale_id;
+end;
+$$;
+
+revoke all on function public.create_sale_atomic(jsonb) from public;
+grant execute on function public.create_sale_atomic(jsonb) to authenticated;
