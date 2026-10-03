@@ -84,8 +84,9 @@ The AAB is intended for Google Play distribution; the APK is useful for controll
 For an existing Supabase installation, apply migrations in order after the base schema:
 1. supabase/migrations/20261003_kasira_005_production.sql
 2. supabase/migrations/20261003_kasira_006_invariants.sql
+3. supabase/migrations/20261003_kasira_007_employee_auth.sql
 
-Migration 006 adds database-level money, stock, quantity, payment-method, and transaction-formula invariants. For a new database, run supabase/schema.sql first, then apply both migrations in order.
+Migration 006 adds database-level money, stock, quantity, payment-method, and transaction-formula invariants. Migration 007 binds employee records to Supabase Auth for secure self-service attendance. For a new database, run supabase/schema.sql first, then apply all three migrations in order.
 
 ## 8. Pre-launch checklist
 
