@@ -150,6 +150,11 @@ create index if not exists idx_products_business on public.products(business_id)
 create index if not exists idx_stocks_outlet on public.product_stocks(outlet_id);
 create index if not exists idx_sales_business_created on public.sales(business_id, created_at desc);
 create index if not exists idx_purchases_business_created on public.purchases(business_id, created_at desc);
+create unique index if not exists products_business_barcode_uidx
+on public.products(business_id, barcode)
+where barcode is not null and barcode <> '';
+create index if not exists idx_sale_items_product on public.sale_items(product_id);
+create index if not exists idx_purchase_items_product on public.purchase_items(product_id);
 
 alter table public.businesses enable row level security;
 alter table public.outlets enable row level security;
@@ -207,6 +212,16 @@ create policy supplier_member_all on public.suppliers for all using (public.is_b
 
 drop policy if exists sale_member_all on public.sales;
 create policy sale_member_all on public.sales for all using (public.is_business_member(business_id)) with check (public.is_business_member(business_id));
+
+drop policy if exists sale_item_member_all on public.sale_items;
+create policy sale_item_member_all on public.sale_items for all
+using (exists(select 1 from public.sales s where s.id=sale_id and public.is_business_member(s.business_id)))
+with check (exists(select 1 from public.sales s where s.id=sale_id and public.is_business_member(s.business_id)));
+
+drop policy if exists purchase_item_member_all on public.purchase_items;
+create policy purchase_item_member_all on public.purchase_items for all
+using (exists(select 1 from public.purchases p where p.id=purchase_id and public.is_business_member(p.business_id)))
+with check (exists(select 1 from public.purchases p where p.id=purchase_id and public.is_business_member(p.business_id)));
 
 drop policy if exists purchase_member_all on public.purchases;
 create policy purchase_member_all on public.purchases for all using (public.is_business_member(business_id)) with check (public.is_business_member(business_id));
