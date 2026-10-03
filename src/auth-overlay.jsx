@@ -52,7 +52,7 @@ function Login(){
   <div className="kasiraAuthTitle">Masuk ke KASIRA</div><p className="kasiraAuthDesc">Gunakan akun sesuai tugas dan hak akses Anda.</p>
   <form onSubmit={login}>
    <label>Username<input autoFocus value={username} onChange={e=>{setUsername(e.target.value);setError("")}} placeholder="Masukkan username"/></label>
-   <label>Password><div className="kasiraPass"><input type={show?"text":"password"} value={password} onChange={e=>{setPassword(e.target.value);setError("")}} placeholder="Masukkan password"/><button type="button" onClick={()=>setShow(!show)}>{show?"Sembunyikan":"Lihat"}</button></div></label>
+   <label>Password<div className="kasiraPass"><input type={show?"text":"password"} value={password} onChange={e=>{setPassword(e.target.value);setError("")}} placeholder="Masukkan password"/><button type="button" onClick={()=>setShow(!show)}>{show?"Sembunyikan":"Lihat"}</button></div></label>
    {error&&<div className="kasiraAuthError">{error}</div>}<button className="kasiraLoginBtn">Masuk</button>
   </form>
   <div className="kasiraRoleInfo"><b>Akun pengujian</b><span>owner / owner123</span><span>pengguna / pengguna123</span><span>kasir / kasir123</span><span>karyawan / karyawan123</span></div>
