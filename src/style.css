@@ -11,3 +11,12 @@
 @media(max-width:900px){.reportGrid,.settingsGrid{grid-template-columns:1fr}.dashboardGrid{grid-template-columns:1fr}.chartPanel{grid-column:auto}}
 @media(max-width:600px){.twoInputs{grid-template-columns:1fr}.tableSearch input{width:95px}.form{grid-template-columns:1fr}.form label{min-width:0}.reportRow{grid-template-columns:75px 1fr auto}.receiptActions{position:sticky;bottom:0;background:#fff;padding-top:8px}}
 @media print{.header,aside,.pageHead,.metricGrid,.primary,.scan,.tableSearch{display:none!important}main{margin:0;padding:0}.panel{box-shadow:none;border:0}.app{background:#fff}}
+
+.status.offline{background:#fff7e8;color:#b76a00}.status.offline i{background:#f0a020}
+@media print{
+ body.printing-ready .app>*{display:none!important}
+ body.printing-ready .app .receiptOverlay{display:grid!important;position:static!important;background:#fff!important;padding:0!important}
+ body.printing-ready .receiptOverlay .modal{display:block!important;width:80mm!important;max-width:80mm!important;box-shadow:none!important;border-radius:0!important;padding:8mm!important}
+ body.printing-ready .receiptOverlay .modalClose,body.printing-ready .receiptOverlay .receiptActions{display:none!important}
+ body.printing-ready .receipt{font-family:monospace!important;color:#000!important}
+}
