@@ -216,3 +216,29 @@ create policy cash_member_all on public.cash_transactions for all using (public.
 
 drop policy if exists audit_member_read on public.audit_logs;
 create policy audit_member_read on public.audit_logs for select using (public.is_business_member(business_id));
+
+
+-- KASIRA v0.4 operational controls
+create table if not exists public.sale_returns (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  outlet_id uuid references public.outlets(id) on delete set null,
+  sale_id uuid not null references public.sales(id) on delete restrict,
+  sale_item_id uuid references public.sale_items(id) on delete set null,
+  qty numeric(14,3) not null check (qty > 0),
+  refund_amount numeric(14,2) not null default 0 check (refund_amount >= 0),
+  reason text,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists sale_returns_business_idx on public.sale_returns(business_id, created_at desc);
+alter table public.sale_returns enable row level security;
+
+drop policy if exists "sale_returns_member_all" on public.sale_returns;
+create policy "sale_returns_member_all" on public.sale_returns
+for all using (public.is_business_member(business_id))
+with check (public.is_business_member(business_id));
+
+-- Cash ledger indexes/policies are intentionally business-scoped.
+create index if not exists cash_transactions_business_idx on public.cash_transactions(business_id, created_at desc);
