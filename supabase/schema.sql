@@ -175,7 +175,7 @@ returns boolean language sql stable security definer set search_path=''
 as $ select exists (
   select 1 from public.memberships m
   where m.business_id=target_business and m.user_id=auth.uid()
-); $;
+ ); $;
 
 create or replace function public.is_business_manager(target_business uuid)
 returns boolean language sql stable security definer set search_path=''
@@ -183,7 +183,7 @@ as $ select exists (
   select 1 from public.memberships m
   where m.business_id=target_business and m.user_id=auth.uid()
   and m.role in ('owner','manager')
-); $;
+ ); $;
 
 drop policy if exists business_member_read on public.businesses;
 create policy business_member_read on public.businesses for select using (public.is_business_member(id));
