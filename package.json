@@ -1,14 +1,15 @@
 {
-  "name": "kasira-pos-mvp",
+  "name": "kasira-pos",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "build:android": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
-    "cap:sync": "npx cap sync"
+    "cap:sync": "npx cap sync",
+    "test:smoke": "vite build"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
