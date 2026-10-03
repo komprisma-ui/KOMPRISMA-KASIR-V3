@@ -81,8 +81,11 @@ The AAB is intended for Google Play distribution; the APK is useful for controll
 
 ## 7. Database rollout
 
-For an existing Supabase installation, apply supabase/migrations/20261003_kasira_005_production.sql after the base schema.
-For a new database, supabase/schema.sql already contains the current foundation.
+For an existing Supabase installation, apply migrations in order after the base schema:
+1. supabase/migrations/20261003_kasira_005_production.sql
+2. supabase/migrations/20261003_kasira_006_invariants.sql
+
+Migration 006 adds database-level money, stock, quantity, payment-method, and transaction-formula invariants. For a new database, run supabase/schema.sql first, then apply both migrations in order.
 
 ## 8. Pre-launch checklist
 
