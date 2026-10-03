@@ -130,7 +130,7 @@ function Login(){
         <button className="kasiraLoginBtn" disabled={loading||!supabaseConfigured}>{loading?"Memproses…":"Masuk"}</button>
       </form>
       <div className="kasiraRoleInfo"><b>Hak akses otomatis dari database</b><span>Owner • semua modul</span><span>Manager • operasional & laporan</span><span>Kasir • transaksi</span><span>Karyawan • absensi</span></div>
-      <small className="kasiraSecurityNote">Kredensial tidak ditanam di APK. Otorisasi bisnis dikendalikan Supabase Auth + RLS.</small>
+      <small className="kasiraSecurityNote">Kredensial tidak ditanam di APK. Otorisasi bisnis dikendalikan Supabase Auth + RLS.<br/><a href="/privacy-policy.html" target="_blank" rel="noreferrer">Kebijakan Privasi</a> · <a href="/delete-account.html" target="_blank" rel="noreferrer">Penghapusan Akun</a></small>
     </div>
   </div>;
 }
