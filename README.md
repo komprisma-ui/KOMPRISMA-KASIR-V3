@@ -1,4 +1,4 @@
-# KASIRA POS MVP
+# KASIRA — Professional POS v0.4.2
 Modern Point of Sale MVP built with React + Vite.
 
 ## Run locally
@@ -12,10 +12,13 @@ npm run dev
 - Local offline persistence
 - Responsive mobile/tablet/desktop UI
 
-## Roadmap
-Authentication, cloud database, multi-outlet, purchasing, suppliers, customers, reports, printer/QRIS integrations, audit log and online/offline sync.
+## Release status
+Web build: production build verified. Android debug APK: installable build verified by GitHub Actions. Supabase schema: multi-tenant RLS and transaction-hardening foundation available in `supabase/schema.sql`.
 
-## KASIRA Professional POS v0.3
+## Production hardening still required
+Supabase Auth/live synchronization, native camera barcode, thermal Bluetooth/USB printer, real QRIS gateway, cash closing/opname, signed production AAB/APK, Play Store compliance, and device-level acceptance testing.
+
+## KASIRA Professional POS v0.4.2
 
 KASIRA sekarang memiliki fondasi POS profesional yang dapat berjalan offline dan siap dikembangkan menjadi SaaS/cloud.
 
@@ -33,5 +36,5 @@ KASIRA sekarang memiliki fondasi POS profesional yang dapat berjalan offline dan
 - PWA + Capacitor Android dengan app id `com.kasira.pos`.
 - Supabase PostgreSQL + RLS multi-tenant foundation tersedia di `supabase/schema.sql`.
 
-### Roadmap enterprise
-Barcode camera native, printer thermal Bluetooth/USB, QRIS payment integration, retur/refund, kas masuk/keluar, supplier master, role & permission, multi-outlet, audit log, cloud sync, authentication, subscription SaaS, dan Play Store release hardening.
+### Enterprise roadmap
+Native camera barcode, thermal Bluetooth/USB printer, real QRIS payment integration, live Supabase Auth/sync, offline outbox synchronization, production signing, Play Store release hardening, subscription SaaS, and multi-outlet operations.
