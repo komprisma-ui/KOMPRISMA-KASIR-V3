@@ -75,6 +75,19 @@ begin
     )
   ) then raise exception 'not authorized for business'; end if;
 
+  if not public.has_business_role(v_business_id,array['owner','manager','cashier'])
+     and v_customer_user_id is not null
+     and v_customer_user_id<>(select auth.uid()) then
+    raise exception 'member checkout cannot impersonate another customer';
+  end if;
+
+  if v_seller_member_id is null then
+    select m.id into v_seller_member_id
+    from public.vora_members m
+    where m.business_id=v_business_id and m.user_id=(select auth.uid()) and m.status='active'
+    limit 1;
+  end if;
+
   if not exists(
     select 1 from public.outlets o
     where o.id=v_outlet_id and o.business_id=v_business_id
@@ -129,6 +142,7 @@ begin
 
     if v_discount>v_unit*v_qty then raise exception 'item discount exceeds item value'; end if;
 
+    v_qual_rate:=0; v_pv_unit:=0; v_cv_unit:=0;
     select coalesce(q.qualified_rate,0),coalesce(q.pv_per_unit,0),coalesce(q.cv_per_unit,0)
     into v_qual_rate,v_pv_unit,v_cv_unit
     from public.vora_product_qualification q
@@ -167,6 +181,7 @@ begin
     v_discount := greatest(0,coalesce((v_item->>'discount')::numeric,0));
     v_line := (v_unit*v_qty)-v_discount;
 
+    v_pv_unit:=0; v_cv_unit:=0;
     select coalesce(q.pv_per_unit,0),coalesce(q.cv_per_unit,0)
     into v_pv_unit,v_cv_unit
     from public.vora_product_qualification q
