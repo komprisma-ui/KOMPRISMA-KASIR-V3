@@ -65,6 +65,13 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Verify Android 16 target
+        run: |
+          test -f android/variables.gradle || { echo "::error::Capacitor Android variables.gradle missing"; exit 1; }
+          TARGET=$(grep -E 'targetSdkVersion' android/variables.gradle | grep -oE '[0-9]+' | head -1)
+          echo "Detected targetSdkVersion=$TARGET"
+          test -n "$TARGET" && test "$TARGET" -ge 36 || { echo "::error::Google Play requires targetSdk 36+ for new apps/updates"; exit 1; }
+
       - name: Build signed Android AAB
         run: npx cap build android
 
