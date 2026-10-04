@@ -1,0 +1,23 @@
+:root{--navy:#20242a;--navy2:#343941;--blue:#8b929a;--cyan:#f7f8fa;--ink:#1d2024;--muted:#727982;--line:#d9dde2;--bg:#f1f3f5;--card:#fff;--green:#4d555e;--red:#7b8087;--shadow:0 14px 40px rgba(32,36,42,.12)}
+body{background:radial-gradient(circle at 15% 0%,#fff 0,#f1f3f5 42%,#e6e9ec 100%)}
+.header{background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border-bottom-color:#cfd4d9}
+.brand b{letter-spacing:3px;background:linear-gradient(110deg,#171a1e,#aeb4bb 42%,#22262b 62%,#f8f9fa 78%,#555b62);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brandIcon,.brandIcon img{filter:drop-shadow(0 6px 12px rgba(30,34,40,.2))}
+.outlet{background:linear-gradient(145deg,#f9fafb,#e8ebee);border:1px solid #d4d8dd}
+.outletMark{background:linear-gradient(145deg,#15181c,#7d848c,#24282d);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 5px 12px rgba(30,34,40,.16)}
+nav button.active{background:linear-gradient(100deg,#e5e8eb,#f8f9fa);color:#20242a;box-shadow:inset 3px 0 #4e555d}
+.primary{background:linear-gradient(135deg,#1b1f24,#626a73 45%,#1d2126);box-shadow:0 9px 22px rgba(32,36,42,.22);border:1px solid #0e1013}
+.scan{color:#3f464e;border-color:#c5cbd1;background:linear-gradient(145deg,#fff,#e9ecef)}
+.hero{background:linear-gradient(115deg,#111419,#353b42 50%,#707780);box-shadow:0 18px 42px rgba(32,36,42,.22)}
+.hero:after{border-color:rgba(255,255,255,.2)}
+.metric,.panel{box-shadow:var(--shadow);border-color:#d7dbe0}
+.metricIcon{background:linear-gradient(145deg,#ffffff,#c9ced4);color:#30363c;border:1px solid #c0c6cc}
+.badge{background:#eef0f2;color:#3f464e}
+.status{background:#eceff1;color:#4a5158}
+.status i,.cloud>i{background:#697179}
+.cloud{background:linear-gradient(145deg,#fff,#edf0f2);border-color:#d3d7dc}
+.cloud svg{color:#4d555e}
+.module-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.module-grid button{display:flex;align-items:center;gap:10px;padding:14px;border:1px solid #d7dbe0;border-radius:12px;background:linear-gradient(145deg,#fff,#eef0f2);color:#333940;font-weight:700}.module-grid svg{width:18px}
+.vora-principles{display:grid;gap:10px}.vora-principles p{margin:0;padding:10px 12px;background:#f4f5f6;border-radius:10px;color:#4e555d;font-size:12px}.vora-principles b{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:7px;background:#292e34;color:#fff;margin-right:8px}
+.vora-login{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 0,#fff,#dfe3e7 72%,#cdd2d7)}.vora-login-card{width:min(430px,100%);padding:34px;border-radius:24px;background:rgba(255,255,255,.92);border:1px solid #d3d7dc;box-shadow:0 30px 80px rgba(30,34,40,.2)}.vora-logo{display:flex;align-items:center;gap:12px;margin-bottom:24px}.vora-logo img{width:54px;height:54px}.vora-logo b{display:block;font-size:22px;letter-spacing:4px}.vora-logo small{color:#777f87}.vora-login-card h1{margin:0 0 8px;font-size:27px}.vora-login-card>p{color:#707780;font-size:13px;line-height:1.6}.vora-login-card form{display:grid;gap:14px;margin-top:22px}.vora-login-card label{display:grid;gap:7px;font-size:12px;font-weight:700}.vora-login-card input{padding:12px 13px;border:1px solid #cdd2d7;border-radius:10px;background:#fff;outline:none}.vora-login-card input:focus{border-color:#5c646d;box-shadow:0 0 0 3px rgba(92,100,109,.1)}.login-error{padding:10px;border-radius:9px;background:#f1f2f3;color:#555d65;font-size:12px}.login-note{display:block;margin-top:16px;color:#8a9096;font-size:10px;line-height:1.5}.vora-loading{min-height:100vh;display:grid;place-items:center;font-weight:800;letter-spacing:2px;color:#555d65}
+@media(max-width:900px){main{padding:20px}.metricGrid{grid-template-columns:repeat(2,1fr)}.userName{display:none}}

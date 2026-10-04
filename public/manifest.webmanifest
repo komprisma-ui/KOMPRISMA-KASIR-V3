@@ -1,10 +1,10 @@
 {
-  "name":"KASIRA — Point of Sale & Business Management",
-  "short_name":"KASIRA",
+  "name":"VORA — Digital Business Ecosystem",
+  "short_name":"VORA",
   "start_url":"/",
   "display":"standalone",
-  "background_color":"#071a35",
-  "theme_color":"#0b76ff",
-  "description":"Modern Point of Sale & Business Management",
-  "icons":[{"src":"/kasira-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "background_color":"#22252b",
+  "theme_color":"#555d65",
+  "description":"Digital Business Ecosystem",
+  "icons":[{"src":"/vora-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
