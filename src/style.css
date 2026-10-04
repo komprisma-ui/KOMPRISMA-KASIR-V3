@@ -55,3 +55,10 @@ nav button.active{background:linear-gradient(90deg,rgba(23,105,255,.13),rgba(24,
 .payMethods button{background:var(--card);color:var(--muted);border-color:var(--line)}
 .payMethods button.selected{background:rgba(23,105,255,.10);border-color:#76b2ff;color:var(--blue)}
 .paymentNote{display:block;font-size:8px;color:var(--muted);line-height:1.5;margin:-7px 0 12px}
+
+.themeToggle{width:36px;height:36px;border-radius:10px;background:var(--card2);border:1px solid var(--line);color:var(--muted);display:grid;place-items:center;font-size:16px;transition:.2s}
+.themeToggle:hover{color:var(--blue);border-color:#76b2ff;transform:translateY(-1px)}
+html[data-theme="dark"] .status{background:#103328;color:#66ddb0}
+html[data-theme="dark"] .status.offline{background:#38272a;color:#ff9298}
+html[data-theme="dark"] .heroChart span,.heroChart span{box-shadow:0 0 16px rgba(24,200,255,.14)}
+html[data-theme="dark"] .receipt{color:var(--ink)}
