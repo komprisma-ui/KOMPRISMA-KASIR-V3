@@ -190,8 +190,6 @@ revoke all on function public.vora_join_member(uuid,text,text,text,uuid,uuid,tex
 revoke all on function public.vora_join_member(uuid,text,text,text,uuid,uuid,text) from anon;
 grant execute on function public.vora_join_member(uuid,text,text,text,uuid,uuid,text) to authenticated;
 
--- Remove the obsolete direct function if a previous deployment left it around.
-revoke all on function public.vora_register_member(uuid,text,text,text,uuid,uuid,text) from public;
 
 -- Wallet provisioning for admin-created members is done in the RPC above.
 -- Direct member inserts are allowed only for admins; a wallet is still
