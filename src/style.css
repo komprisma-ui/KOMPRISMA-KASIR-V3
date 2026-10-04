@@ -20,3 +20,38 @@
  body.printing-ready .receiptOverlay .modalClose,body.printing-ready .receiptOverlay .receiptActions{display:none!important}
  body.printing-ready .receipt{font-family:monospace!important;color:#000!important}
 }
+
+
+/* KASIRA PREMIUM DESIGN SYSTEM */
+:root{
+ --navy:#081426;--navy2:#0d2340;--blue:#1769ff;--cyan:#18c8ff;--ink:#172033;--muted:#78869a;
+ --line:#e5ebf3;--bg:#f3f6fa;--card:#ffffff;--card2:#f8fafc;--green:#07966a;--red:#dc4650;
+ --gold:#b88a3b;--shadow:0 12px 36px rgba(14,32,58,.07);--shadow-lg:0 22px 60px rgba(8,25,49,.13);
+ --radius:16px
+}
+html[data-theme="dark"]{
+ --navy:#eaf2ff;--navy2:#c9dbf5;--ink:#edf4ff;--muted:#91a1b8;--line:#263750;
+ --bg:#07101e;--card:#0e192b;--card2:#111f34;--shadow:0 14px 40px rgba(0,0,0,.25);--shadow-lg:0 25px 70px rgba(0,0,0,.42)
+}
+body{background:radial-gradient(circle at 80% -10%,rgba(24,200,255,.045),transparent 30%),var(--bg);color:var(--ink);transition:background .25s,color .25s}
+.header{background:color-mix(in srgb,var(--card) 94%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);box-shadow:0 5px 24px rgba(8,25,49,.04)}
+aside,.panel,.metric,.product,.modal{background:var(--card);border-color:var(--line);box-shadow:var(--shadow)}
+aside{box-shadow:8px 0 30px rgba(8,25,49,.035)}
+nav button{color:var(--muted);transition:.18s}
+nav button:hover{background:var(--card2);color:var(--blue);transform:translateX(2px)}
+nav button.active{background:linear-gradient(90deg,rgba(23,105,255,.13),rgba(24,200,255,.04));color:var(--blue);box-shadow:inset 3px 0 0 var(--blue)}
+.outlet,.cloud,.iconBtn,.ghost,.controls button,.cats button,.settingAction{background:var(--card2);border-color:var(--line)}
+.metric{border-radius:18px}
+.metric:hover,.panel:hover{box-shadow:var(--shadow-lg)}
+.metricIcon{background:rgba(23,105,255,.10)}
+.hero{background:radial-gradient(circle at 85% 20%,rgba(24,200,255,.2),transparent 26%),linear-gradient(115deg,#071426,#0b2d52 58%,#075c96);box-shadow:var(--shadow-lg)}
+.hero:before{content:"";position:absolute;width:260px;height:260px;border:1px solid rgba(255,255,255,.08);border-radius:50%;right:40px;bottom:-190px}
+.primary,.pay{background:linear-gradient(135deg,#155ff0,#10a9ff);box-shadow:0 10px 24px rgba(23,105,255,.2)}
+.product:hover{border-color:#76b2ff;transform:translateY(-3px);box-shadow:0 14px 30px rgba(23,105,255,.11)}
+.tablePanel th{background:var(--card2);color:var(--muted)}
+.tablePanel th,.tablePanel td,.panelHead,.item,.summary{border-color:var(--line)}
+.form input,.form select,.settingsCard input,.settingsCard textarea,.settingsCard select,.tableSearch,.searchBox{background:var(--card);color:var(--ink);border-color:var(--line)}
+.searchBox input{color:var(--ink)}
+.payMethods button{background:var(--card);color:var(--muted);border-color:var(--line)}
+.payMethods button.selected{background:rgba(23,105,255,.10);border-color:#76b2ff;color:var(--blue)}
+.paymentNote{display:block;font-size:8px;color:var(--muted);line-height:1.5;margin:-7px 0 12px}
