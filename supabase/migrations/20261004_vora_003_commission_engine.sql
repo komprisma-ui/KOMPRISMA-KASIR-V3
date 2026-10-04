@@ -41,6 +41,9 @@ begin
   for update;
 
   if not found then raise exception 'order not found'; end if;
+  if not public.has_business_role(v_order.business_id,array['owner','manager']) then
+    raise exception 'not authorized to settle commissions';
+  end if;
 
   if v_order.status <> 'completed' then
     raise exception 'order must be completed before commission settlement';
@@ -227,6 +230,9 @@ declare
 begin
   select * into v_order from public.vora_orders where id=p_order_id;
   if not found then raise exception 'order not found'; end if;
+  if not public.has_business_role(v_order.business_id,array['owner','manager']) then
+    raise exception 'not authorized to reverse commissions';
+  end if;
 
   for v_entry in
     select l.*
