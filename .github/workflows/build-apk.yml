@@ -23,13 +23,9 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install dependencies
+      - name: Install dependencies reproducibly
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+          if [ -f package-lock.json ]; then npm ci; else npm install --package-lock-only --ignore-scripts && npm ci; fi
 
       - name: Build web
         run: npm run build
