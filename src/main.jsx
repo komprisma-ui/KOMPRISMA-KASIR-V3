@@ -85,7 +85,7 @@ function App(){
    if(!cart.length)return alert("Keranjang kosong.");
    checkoutLock.current=true;
    try{
-    const now=Date.now(),number="TRX-"+String(now).slice(-8)+"-"+Math.random().toString(36).slice(2,5).toUpperCase();
+    const now=Date.now(),clientRequestId=uid(),number="TRX-"+String(now).slice(-8)+"-"+Math.random().toString(36).slice(2,5).toUpperCase();
     const subtotal=cart.reduce((a,i)=>a+safeNumber(i.price)*safeNumber(i.qty),0);
     const discount=clampMoney(d.discount,subtotal);
     const taxRate=Math.min(100,safeNumber(d.tax));
@@ -100,9 +100,9 @@ function App(){
       const paymentMap={Tunai:"cash",Kartu:"card",QRIS:"qris",Transfer:"transfer"};
       const payload={
         business_id:cloud.businessId,outlet_id:cloud.outletId,customer_id:customer?.id||null,
-        invoice_no:number,subtotal,discount,tax,total:grand,payment_method:paymentMap[d.payment]||"cash",
+        client_request_id:clientRequestId,invoice_no:number,subtotal,discount,tax,total:grand,payment_method:paymentMap[d.payment]||"cash",
         paid_amount:paid,change_amount:change,
-        items:items.map((i,idx)=>{const line=i.price*i.qty;const share=subtotal?discount*line/subtotal:0;const itemDiscount=idx===items.length-1?Math.max(0,discount-items.slice(0,-1).reduce((a,x)=>a+(subtotal?discount*(x.price*x.qty)/subtotal:0),0)):share;return{product_id:i.id,quantity:i.qty,unit_price:i.price,discount:itemDiscount,total:line-itemDiscount}})
+        items:items.map((i,idx)=>{const line=i.price*i.qty;const share=subtotal?discount*line/subtotal:0;const itemDiscount=idx===items.length-1?Math.max(0,discount-items.slice(0,-1).reduce((a,x)=>a+(subtotal?discount*(x.price*x.qty)/subtotal:0),0)):share;return{product_id:i.id,quantity:i.qty,unit_price:i.price,unit_cost_at_sale:i.cost,discount:itemDiscount,total:line-itemDiscount}})
       };
       const {data:saleId,error}=await supabase.rpc("create_sale_atomic",{payload});
       if(error){alert("Transaksi cloud gagal: "+error.message);return;}
@@ -132,7 +132,7 @@ function App(){
  const importData=e=>{let f=e.target.files?.[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);const arr=["products","sales","customers","purchases","cash","returns"];if(!d||!(d.version===2||d.version===3)||!arr.every(k=>Array.isArray(d[k]))||!d.settings||typeof d.settings!=="object")throw new Error("invalid");if(!confirm("Pulihkan backup KASIRA ini? Data aktif akan diganti."))return;setProducts(d.products);setSales(d.sales);setCustomers(d.customers);setPurchases(d.purchases);setCash(d.cash);setReturns(d.returns);setSettings(d.settings);alert("Backup berhasil dipulihkan.")}catch{alert("Backup tidak valid atau bukan backup KASIRA v2.")}finally{e.target.value=""}};r.readAsText(f)};
  return <div className="app">
  <header className="header"><div className="brand"><div className="brandIcon"><img src="/kasira-icon.svg"/></div><div><b>KASIRA</b><small>Professional Point of Sale</small></div></div><div className="headerRight"><span className={online?"status":"status offline"}><i/> {online?"Online":"Offline"}</span><button className="iconBtn" onClick={()=>setModal({type:"notifications"})}><Bell size={19}/>{low.length>0&&<em className="notifyDot"/>}</button><div className="avatar">A</div><div className="userName"><b>Admin</b><small>Owner • {settings.store}</small></div></div><button className="menuBtn" onClick={()=>setMobile(!mobile)}>{mobile?<X/>:<Menu/>}</button></header>
- <aside className={mobile?"open":""}><div><div className="outlet"><div className="outletMark">K</div><div><b>{settings.store}</b><small>Outlet aktif</small></div><ChevronRight size={16}/></div><nav>{nav.map(([n,I])=><button className={page===n?"active":""} onClick={()=>{setPage(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span>{n==="Stok"&&low.length>0&&<em>{low.length}</em>}</button>)}</nav></div><div className="sideFoot"><div className="cloud"><Database size={16}/><span><b>Mode Offline</b><small>Data tersimpan lokal</small></span><i/></div><small>v0.4.2 Hardening</small></div></aside>
+ <aside className={mobile?"open":""}><div><div className="outlet"><div className="outletMark">K</div><div><b>{settings.store}</b><small>Outlet aktif</small></div><ChevronRight size={16}/></div><nav>{nav.map(([n,I])=><button className={page===n?"active":""} onClick={()=>{setPage(n);setMobile(false)}} key={n}><I size={18}/><span>{n}</span>{n==="Stok"&&low.length>0&&<em>{low.length}</em>}</button>)}</nav></div><div className="sideFoot"><div className="cloud"><Database size={16}/><span><b>Mode Offline</b><small>Data tersimpan lokal</small></span><i/></div><small>v0.5.0 Production</small></div></aside>
  <main>
  {page==="Dashboard"&&<Dashboard omzet={omzet} sales={sales} products={products} customers={customers} low={low} setPage={setPage}/>}
  {page==="Kasir"&&<POS products={products} filtered={filtered} cats={cats} cat={cat} setCat={setCat} q={q} setQ={setQ} cart={cart} total={total} add={add} change={change} setCart={setCart} setModal={setModal} customer={customer} setCustomer={setCustomer} customers={customers}/>}
