@@ -87,6 +87,7 @@ create table if not exists public.sales (
   paid_amount numeric(14,2) not null default 0,
   change_amount numeric(14,2) not null default 0,
   status text not null default 'paid',
+  client_request_id text,
   created_at timestamptz not null default now(),
   unique (business_id, invoice_no)
 );
@@ -98,7 +99,8 @@ create table if not exists public.sale_items (
   quantity numeric(14,3) not null,
   unit_price numeric(14,2) not null,
   discount numeric(14,2) not null default 0,
-  total numeric(14,2) not null
+  total numeric(14,2) not null,
+  unit_cost_at_sale numeric(14,2) not null default 0 check (unit_cost_at_sale >= 0)
 );
 
 create table if not exists public.purchases (
@@ -155,6 +157,27 @@ on public.products(business_id, barcode)
 where barcode is not null and barcode <> '';
 create index if not exists idx_sale_items_product on public.sale_items(product_id);
 create index if not exists idx_purchase_items_product on public.purchase_items(product_id);
+create unique index if not exists sales_business_client_request_uidx
+on public.sales(business_id, client_request_id)
+where client_request_id is not null and client_request_id <> '';
+
+create table if not exists public.stock_movements (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  outlet_id uuid not null references public.outlets(id) on delete cascade,
+  product_id uuid not null references public.products(id) on delete cascade,
+  quantity_delta numeric(14,3) not null,
+  quantity_before numeric(14,3) not null,
+  quantity_after numeric(14,3) not null,
+  source text not null,
+  reference_id uuid,
+  user_id uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_stock_movements_business_created
+on public.stock_movements(business_id, created_at desc);
+create index if not exists idx_stock_movements_product_outlet
+on public.stock_movements(product_id, outlet_id, created_at desc);
 
 alter table public.businesses enable row level security;
 alter table public.outlets enable row level security;
@@ -169,6 +192,7 @@ alter table public.purchases enable row level security;
 alter table public.purchase_items enable row level security;
 alter table public.cash_transactions enable row level security;
 alter table public.audit_logs enable row level security;
+alter table public.stock_movements enable row level security;
 
 create or replace function public.is_business_member(target_business uuid)
 returns boolean language sql stable security definer set search_path=''
@@ -1075,3 +1099,11 @@ grant select on table public.businesses,public.audit_logs to authenticated;
 revoke all on all functions in schema public from anon;
 revoke all on function public.create_sale_atomic(jsonb) from anon;
 grant execute on function public.create_sale_atomic(jsonb) to authenticated;
+
+
+-- Stock movement read policy. Writes are produced by the server-side trigger/RPC.
+drop policy if exists stock_movements_read on public.stock_movements;
+create policy stock_movements_read on public.stock_movements
+for select using (public.is_business_member(business_id));
+
+grant select on public.stock_movements to authenticated;
