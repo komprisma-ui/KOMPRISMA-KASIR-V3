@@ -1,7 +1,7 @@
 import React,{useEffect,useMemo,useState}from"react";
 import{createRoot}from"react-dom/client";
 import{LayoutDashboard,Users,GitBranch,Receipt,Wallet,BarChart3,Package,ShoppingCart,Settings,ShieldCheck,LogOut,Menu,X,Bell,Search,ChevronRight}from"lucide-react";
-import"./style.css";
+import"./style.css";import"./vora-theme.css";
 import{supabase}from"./supabase";
 import{VoraMembers,VoraNetwork,VoraOrders,VoraWallet,VoraRewards}from"./vora-modules";
 
