@@ -86,7 +86,12 @@ function Login(){
       if(av)av.textContent=(session.user.user_metadata?.full_name||session.user.email||"U").charAt(0).toUpperCase();
       if(un){
         const name=session.user.user_metadata?.full_name||session.user.email||"Pengguna";
-        un.innerHTML="<b>"+name+"</b><small>"+(session.kasira.label||"Pengguna")+" • "+session.kasira.businessName+"</small>";
+        un.textContent="";
+        const b=document.createElement("b");
+        const small=document.createElement("small");
+        b.textContent=name;
+        small.textContent=(session.kasira.label||"Pengguna")+" • "+session.kasira.businessName;
+        un.append(b,small);
       }
     };
     const t=setInterval(guard,250);guard();
