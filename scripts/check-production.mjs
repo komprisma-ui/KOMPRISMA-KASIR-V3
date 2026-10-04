@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-const required=["package.json","index.html","src/main.jsx","src/supabase.js","supabase/schema.sql","supabase/migrations/20261003_kasira_005_production.sql","supabase/migrations/20261003_kasira_006_invariants.sql","supabase/migrations/20261003_kasira_007_employee_auth.sql","supabase/migrations/20261003_kasira_008_idempotency_stock_audit.sql","public/privacy-policy.html","public/delete-account.html"];
+const required=["package.json","index.html","src/main.jsx","src/supabase.js","supabase/schema.sql","supabase/migrations/20261003_kasira_005_production.sql","supabase/migrations/20261003_kasira_006_invariants.sql","supabase/migrations/20261003_kasira_007_employee_auth.sql","supabase/migrations/20261003_kasira_008_idempotency_stock_audit.sql","supabase/migrations/20261004_kasira_009_final_role_hardening.sql","public/privacy-policy.html","public/delete-account.html"];
 for(const file of required) if(!fs.existsSync(file)) throw new Error("Missing required file: "+file);
 
 const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
@@ -21,4 +21,6 @@ for (const file of ["public/privacy-policy.html","public/delete-account.html"]) 
 }
 const main=fs.readFileSync("src/main.jsx","utf8");
 if(!main.includes("client_request_id")||!main.includes("unit_cost_at_sale")) throw new Error("Production checkout idempotency/cost snapshot is missing.");
+const authSource=fs.readFileSync("src/auth-overlay.jsx","utf8");
+if(authSource.includes(".innerHTML=")) throw new Error("Unsafe innerHTML assignment detected in authentication UI.");
 console.log("KASIRA production checks passed.");
