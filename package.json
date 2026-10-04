@@ -14,17 +14,17 @@
     "check:production": "node scripts/check-production.mjs"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "lucide-react": "latest",
-    "@capacitor/core": "latest",
-    "@capacitor/android": "latest",
+    "@vitejs/plugin-react": "5.0.4",
+    "vite": "7.1.9",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "lucide-react": "0.468.0",
+    "@capacitor/core": "7.4.3",
+    "@capacitor/android": "7.4.3",
     "@supabase/supabase-js": "2.117.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "latest",
-    "typescript": "latest"
+    "@capacitor/cli": "7.4.3",
+    "typescript": "5.9.2"
   }
 }
