@@ -3,6 +3,7 @@
 -- Apply after 008.
 
 -- Cash: only owner/manager may directly create/edit/delete cash entries.
+drop policy if exists cash_insert on public.cash_transactions;
 -- Sales RPC remains the controlled path for cash from checkout.
 drop policy if exists cash_member_all on public.cash_transactions;
 create policy cash_member_read on public.cash_transactions
@@ -25,6 +26,7 @@ using (public.has_business_role(business_id,array['owner','manager']));
 
 -- Returns/refunds are financially sensitive. Reading is available to business
 -- members; mutations are restricted to owner/manager/cashier.
+drop policy if exists sale_returns_insert on public.sale_returns;
 drop policy if exists "sale_returns_member_all" on public.sale_returns;
 create policy sale_returns_read on public.sale_returns
 for select to authenticated
@@ -49,6 +51,8 @@ for delete to authenticated
 using (public.has_business_role(business_id,array['owner','manager']));
 
 -- Purchases and stock-register administration belong to owner/manager/warehouse.
+drop policy if exists purchase_write on public.purchases;
+drop policy if exists purchase_item_insert on public.purchase_items;
 drop policy if exists purchase_member_all on public.purchases;
 create policy purchase_read on public.purchases
 for select to authenticated using (public.is_business_member(business_id));
