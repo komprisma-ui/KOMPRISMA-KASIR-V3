@@ -71,8 +71,18 @@ function App(){
      stock:Number(p.product_stocks?.[0]?.quantity||0),minStock:Number(p.min_stock)||0,unit:"pcs"
    }));
    const {data:cloudCustomers}=await supabase.from("customers").select("id,name,phone,email,points").eq("business_id",membership.business_id).order("name");
+   const {data:cloudSales,error:salesError}=await supabase.from("sales").select("id,invoice_no,created_at,subtotal,discount,tax,total,payment_method,paid_amount,change_amount,customer_id,status,sale_items(id,product_id,quantity,unit_price,unit_cost_at_sale,discount,total)").eq("business_id",membership.business_id).eq("outlet_id",outlet.id).order("created_at",{ascending:false}).limit(500);
+   if(salesError) console.error("KASIRA cloud sales:",salesError);
+   const paymentLabels={cash:"Tunai",card:"Kartu",qris:"QRIS",transfer:"Transfer"};
+   const productMap=new Map(mapped.map(x=>[String(x.id),x]));
+   const mappedSales=(cloudSales||[]).map(s=>({
+     id:s.id,number:s.invoice_no,at:s.created_at,subtotal:Number(s.subtotal)||0,discount:Number(s.discount)||0,tax:Number(s.tax)||0,total:Number(s.total)||0,
+     payment:paymentLabels[s.payment_method]||s.payment_method,paid:Number(s.paid_amount)||0,change:Number(s.change_amount)||0,customerId:s.customer_id||null,status:s.status||"paid",cloud:true,
+     items:(s.sale_items||[]).map(i=>{const p=productMap.get(String(i.product_id));return{id:i.id,productId:i.product_id,name:p?.name||"Produk",sku:p?.sku||"",price:Number(i.unit_price)||0,cost:Number(i.unit_cost_at_sale)||0,qty:Number(i.quantity)||0,discount:Number(i.discount)||0,total:Number(i.total)||0}})
+   }));
    setProducts(mapped);
    setCustomers((cloudCustomers||[]).map(x=>({...x,totalSpent:0})));
+   if(!salesError)setSales(mappedSales);
    setCloud({ready:true,businessId:membership.business_id,outletId:outlet.id,userId:session.user.id});
  })()},[]);
  useEffect(()=>{const on=()=>setOnline(true),off=()=>setOnline(false);window.addEventListener("online",on);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off)}},[]);useEffect(()=>save("kasira_products",products),[products]);useEffect(()=>save("kasira_sales",sales),[sales]);useEffect(()=>save("kasira_customers",customers),[customers]);useEffect(()=>save("kasira_purchases",purchases),[purchases]);useEffect(()=>save("kasira_cash",cash),[cash]);useEffect(()=>save("kasira_returns",returns),[returns]);useEffect(()=>save("kasira_journal",journal),[journal]);useEffect(()=>save("kasira_accounts",accounts),[accounts]);useEffect(()=>save("kasira_expenses",expenses),[expenses]);useEffect(()=>save("kasira_payroll",payroll),[payroll]);useEffect(()=>save("kasira_assets",assets),[assets]);useEffect(()=>save("kasira_inventories",inventories),[inventories]);useEffect(()=>save("kasira_employees",employees),[employees]);useEffect(()=>save("kasira_attendance",attendance),[attendance]);useEffect(()=>save("kasira_settings",settings),[settings]);
