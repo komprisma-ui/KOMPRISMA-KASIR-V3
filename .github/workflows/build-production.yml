@@ -41,13 +41,11 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install dependencies
+      - name: Require reproducible dependency lockfile
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+          test -f package-lock.json || { echo "::error::package-lock.json is required for production release"; exit 1; }
+      - name: Install dependencies
+        run: npm ci
 
       - name: Production source guard
         run: npm run check:production
