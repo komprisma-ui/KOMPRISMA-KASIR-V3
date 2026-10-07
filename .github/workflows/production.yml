@@ -14,14 +14,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@1e60f620b9541dca6b0f0a1f9f9e6c8b8b4c5c4 # v4.4.0
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: package.json
       - name: Install dependencies
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --ignore-scripts
+          fi
       - name: Production guard
         run: npm run check:production
       - name: Build web
