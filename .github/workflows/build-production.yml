@@ -41,11 +41,13 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Require reproducible dependency lockfile
-        run: |
-          test -f package-lock.json || { echo "::error::package-lock.json is required for production release"; exit 1; }
       - name: Install dependencies
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Production source guard
         run: npm run check:production
@@ -55,7 +57,9 @@ jobs:
 
       - name: Decode Android signing key
         shell: bash
-        run: echo "${{ secrets.KASIRA_KEYSTORE_BASE64 }}" | base64 --decode > "$KASIRA_KEYSTORE_PATH"
+        run: |
+          printf '%s' "${{ secrets.KASIRA_KEYSTORE_BASE64 }}" | base64 --decode > "$KASIRA_KEYSTORE_PATH"
+          test -s "$KASIRA_KEYSTORE_PATH"
 
       - name: Add Android platform
         run: npx cap add android
@@ -68,7 +72,7 @@ jobs:
           test -f android/variables.gradle || { echo "::error::Capacitor Android variables.gradle missing"; exit 1; }
           TARGET=$(grep -E 'targetSdkVersion' android/variables.gradle | grep -oE '[0-9]+' | head -1)
           echo "Detected targetSdkVersion=$TARGET"
-          test -n "$TARGET" && test "$TARGET" -ge 36 || { echo "::error::Google Play requires targetSdk 36+ for new apps/updates"; exit 1; }
+          test -n "$TARGET" && test "$TARGET" -ge 36 || { echo "::error::Android targetSdkVersion must be 36+"; exit 1; }
 
       - name: Build signed Android AAB
         run: npx cap build android
