@@ -96,7 +96,7 @@ jobs:
       - name: Build signed Android APK
         shell: bash
         run: |
-          npx cap build android --androidreleasetype APK \
+          npx cap build android --androidreleasetype APK --signing-type apksigner \
             --keystorepath "$KASIRA_KEYSTORE_PATH" \
             --keystorepass "$KASIRA_KEYSTORE_PASSWORD" \
             --keystorealias "$KASIRA_KEYSTORE_ALIAS" \
@@ -114,7 +114,7 @@ jobs:
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
           test -n "$APKSIGNER" || { echo "::error::apksigner unavailable"; exit 1; }
           "$APKSIGNER" verify --verbose --print-certs "$APK" >/tmp/apk-verify.txt
-          grep -q "Verified using v1 scheme" /tmp/apk-verify.txt
+          grep -Eq 'Verified using v[123] scheme.*true' /tmp/apk-verify.txt || { cat /tmp/apk-verify.txt; exit 1; }
           grep -q "Signer #" /tmp/apk-verify.txt
           echo "Release AAB and APK signature checks passed."
 
