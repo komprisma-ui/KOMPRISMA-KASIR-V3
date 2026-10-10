@@ -31,6 +31,9 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Build web
+        env:
+          VITE_SUPABASE_URL: https://clylvxgilwywwkxngmnv.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_SMiSLDgxyAxzFhSPq_n6OQ_xf-FZPYw
         run: npm run build
 
       - name: Add Android platform
