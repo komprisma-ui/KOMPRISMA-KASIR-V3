@@ -15,16 +15,16 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "5.0.4",
-    "vite": "7.1.9",
+    "vite": "7.3.7",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "lucide-react": "0.468.0",
-    "@capacitor/core": "7.4.3",
-    "@capacitor/android": "7.4.3",
+    "@capacitor/core": "7.6.9",
+    "@capacitor/android": "7.6.9",
     "@supabase/supabase-js": "2.117.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "7.4.3",
+    "@capacitor/cli": "7.6.9",
     "typescript": "5.9.2"
   }
 }
