@@ -2,6 +2,10 @@ name: KASIRA Production Release
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-production.yml"
 
 permissions:
   contents: read
@@ -48,6 +52,9 @@ jobs:
           else
             npm install
           fi
+
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
 
       - name: Production source guard
         run: npm run check:production
