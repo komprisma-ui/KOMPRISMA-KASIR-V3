@@ -25,7 +25,7 @@ export default async function handler(request) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: "Email tidak valid." });
   if (password.length < 12) return json(400, { error: "Kata sandi awal minimal 12 karakter." });
   if (!businessId) return json(400, { error: "Bisnis aktif tidak ditemukan." });
-  if (!["manager", "cashier", "warehouse", "staff"].includes(role)) return json(400, { error: "Peran tidak diizinkan." });
+  if (!["manager", "cashier", "warehouse", "employee"].includes(role)) return json(400, { error: "Peran tidak diizinkan." });
 
   const authClient = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
