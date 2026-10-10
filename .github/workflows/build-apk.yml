@@ -27,6 +27,9 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install --package-lock-only --ignore-scripts && npm ci; fi
 
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+
       - name: Build web
         run: npm run build
 
