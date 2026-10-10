@@ -67,27 +67,56 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Verify Android 16 target
+      - name: Set Android SDK levels
+        shell: bash
         run: |
           test -f android/variables.gradle || { echo "::error::Capacitor Android variables.gradle missing"; exit 1; }
+          sed -i -E '/compileSdkVersion/s/[0-9]+$/36/' android/variables.gradle
+          sed -i -E '/targetSdkVersion/s/[0-9]+$/36/' android/variables.gradle
+          grep -E 'compileSdkVersion|targetSdkVersion' android/variables.gradle
+
+      - name: Verify Android 16 target
+        shell: bash
+        run: |
+          COMPILE=$(grep -E 'compileSdkVersion' android/variables.gradle | grep -oE '[0-9]+' | head -1)
           TARGET=$(grep -E 'targetSdkVersion' android/variables.gradle | grep -oE '[0-9]+' | head -1)
-          echo "Detected targetSdkVersion=$TARGET"
+          echo "Detected compileSdkVersion=$COMPILE targetSdkVersion=$TARGET"
+          test -n "$COMPILE" && test "$COMPILE" -ge 36 || { echo "::error::Android compileSdkVersion must be 36+"; exit 1; }
           test -n "$TARGET" && test "$TARGET" -ge 36 || { echo "::error::Android targetSdkVersion must be 36+"; exit 1; }
 
       - name: Build signed Android AAB
-        run: npx cap build android
-
-      - name: Build signed Android APK
-        working-directory: android
-        run: ./gradlew assembleRelease --stacktrace
-
-      - name: Verify release artifacts
         shell: bash
         run: |
-          test -f android/app/build/outputs/bundle/release/app-release.aab
-          test -f android/app/build/outputs/apk/release/app-release.apk
-          jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab >/tmp/aab-verify.txt
-          grep -q "jar verified" /tmp/aab-verify.txt
+          npx cap build android --androidreleasetype AAB \
+            --keystorepath "$KASIRA_KEYSTORE_PATH" \
+            --keystorepass "$KASIRA_KEYSTORE_PASSWORD" \
+            --keystorealias "$KASIRA_KEYSTORE_ALIAS" \
+            --keystorealiaspass "$KASIRA_KEYSTORE_ALIAS_PASSWORD"
+
+      - name: Build signed Android APK
+        shell: bash
+        run: |
+          npx cap build android --androidreleasetype APK \
+            --keystorepath "$KASIRA_KEYSTORE_PATH" \
+            --keystorepass "$KASIRA_KEYSTORE_PASSWORD" \
+            --keystorealias "$KASIRA_KEYSTORE_ALIAS" \
+            --keystorealiaspass "$KASIRA_KEYSTORE_ALIAS_PASSWORD"
+
+      - name: Verify release artifacts are signed
+        shell: bash
+        run: |
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$AAB" || { echo "::error::Release AAB missing"; exit 1; }
+          test -s "$APK" || { echo "::error::Release APK missing"; exit 1; }
+          jarsigner -verify "$AAB" >/tmp/aab-verify.txt
+          grep -q "jar verified" /tmp/aab-verify.txt || { cat /tmp/aab-verify.txt; exit 1; }
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$APKSIGNER" || { echo "::error::apksigner unavailable"; exit 1; }
+          "$APKSIGNER" verify --verbose --print-certs "$APK" >/tmp/apk-verify.txt
+          grep -q "Verified using v1 scheme" /tmp/apk-verify.txt
+          grep -q "Signer #" /tmp/apk-verify.txt
+          echo "Release AAB and APK signature checks passed."
 
       - name: Upload production AAB
         uses: actions/upload-artifact@v4
