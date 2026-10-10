@@ -36,12 +36,17 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Verify Android 16 target
+      - name: Set Android SDK 36 and verify
         run: |
           test -f android/variables.gradle || { echo "::error::Capacitor Android variables.gradle missing"; exit 1; }
+          sed -i -E 's/(compileSdkVersion[[:space:]]*=[[:space:]]*)[0-9]+/\136/' android/variables.gradle
+          sed -i -E 's/(targetSdkVersion[[:space:]]*=[[:space:]]*)[0-9]+/\136/' android/variables.gradle
+          grep -E 'compileSdkVersion|targetSdkVersion' android/variables.gradle
+          COMPILE=$(grep -E 'compileSdkVersion' android/variables.gradle | grep -oE '[0-9]+' | head -1)
           TARGET=$(grep -E 'targetSdkVersion' android/variables.gradle | grep -oE '[0-9]+' | head -1)
-          echo "Detected targetSdkVersion=$TARGET"
-          test -n "$TARGET" && test "$TARGET" -ge 36 || { echo "::error::Google Play requires targetSdk 36+ for new apps/updates"; exit 1; }
+          echo "Detected compileSdkVersion=$COMPILE targetSdkVersion=$TARGET"
+          test -n "$COMPILE" && test "$COMPILE" -ge 36 || { echo "::error::compileSdkVersion must be 36+"; exit 1; }
+          test -n "$TARGET" && test "$TARGET" -ge 36 || { echo "::error::targetSdkVersion must be 36+"; exit 1; }
 
       # Debug builds are automatically signed with Android's debug keystore,
       # so the resulting APK can be installed directly on a test device.
