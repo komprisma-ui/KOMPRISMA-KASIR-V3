@@ -1,0 +1,26 @@
+-- Cover unindexed KASIRA foreign keys identified by Supabase performance advisor.
+create index if not exists idx_fk_attendance_business_id on public.attendance (business_id);
+create index if not exists idx_fk_audit_logs_business_id on public.audit_logs (business_id);
+create index if not exists idx_fk_audit_logs_user_id on public.audit_logs (user_id);
+create index if not exists idx_fk_cash_transactions_outlet_id on public.cash_transactions (outlet_id);
+create index if not exists idx_fk_cash_transactions_user_id on public.cash_transactions (user_id);
+create index if not exists idx_fk_customers_business_id on public.customers (business_id);
+create index if not exists idx_fk_employees_outlet_id on public.employees (outlet_id);
+create index if not exists idx_fk_employees_user_id on public.employees (user_id);
+create index if not exists idx_fk_fixed_assets_outlet_id on public.fixed_assets (outlet_id);
+create index if not exists idx_fk_inventory_register_outlet_id on public.inventory_register (outlet_id);
+create index if not exists idx_fk_journal_entries_created_by on public.journal_entries (created_by);
+create index if not exists idx_fk_journal_entries_outlet_id on public.journal_entries (outlet_id);
+create index if not exists idx_fk_journal_lines_account_id on public.journal_lines (account_id);
+create index if not exists idx_fk_payroll_employee_id on public.payroll (employee_id);
+create index if not exists idx_fk_purchases_outlet_id on public.purchases (outlet_id);
+create index if not exists idx_fk_purchases_supplier_id on public.purchases (supplier_id);
+create index if not exists idx_fk_sale_returns_created_by on public.sale_returns (created_by);
+create index if not exists idx_fk_sale_returns_outlet_id on public.sale_returns (outlet_id);
+create index if not exists idx_fk_sale_returns_sale_id on public.sale_returns (sale_id);
+create index if not exists idx_fk_sale_returns_sale_item_id on public.sale_returns (sale_item_id);
+create index if not exists idx_fk_sales_cashier_id on public.sales (cashier_id);
+create index if not exists idx_fk_sales_customer_id on public.sales (customer_id);
+create index if not exists idx_fk_stock_movements_outlet_id on public.stock_movements (outlet_id);
+create index if not exists idx_fk_stock_movements_user_id on public.stock_movements (user_id);
+create index if not exists idx_fk_suppliers_business_id on public.suppliers (business_id);
