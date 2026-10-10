@@ -13,4 +13,9 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - name: Report dependency vulnerabilities
+        shell: bash
+        run: |
+          npm audit --json > /tmp/npm-audit.json || true
+          node --input-type=commonjs -e 'const a=require("/tmp/npm-audit.json"); const v=Object.entries(a.vulnerabilities||{}).map(([name,x])=>({name,severity:x.severity,range:x.range,fixAvailable:x.fixAvailable,via:(x.via||[]).map(y=>typeof y==="string"?y:{title:y.title,url:y.url,range:y.range})})); console.log(JSON.stringify({summary:a.metadata?.vulnerabilities,packages:v},null,2));'
       - run: npm run build
