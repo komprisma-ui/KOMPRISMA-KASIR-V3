@@ -11,7 +11,9 @@
     "cap:sync": "npx cap sync",
     "test:smoke": "npm run build",
     "audit:syntax": "npm run build",
-    "check:production": "node scripts/check-production.mjs"
+    "check:production": "node scripts/check-production.mjs",
+    "test:offline": "node scripts/test-offline-sync.mjs",
+    "test": "npm run test:offline && npm run check:production && npm run build"
   },
   "dependencies": {
     "@vitejs/plugin-react": "5.0.4",
