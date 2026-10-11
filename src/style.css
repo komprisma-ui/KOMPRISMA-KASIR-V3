@@ -16,7 +16,7 @@
 @media print{
  body.printing-ready .app>*{display:none!important}
  body.printing-ready .app .receiptOverlay{display:grid!important;position:static!important;background:#fff!important;padding:0!important}
- body.printing-ready .receiptOverlay .modal{display:block!important;width:80mm!important;max-width:80mm!important;box-shadow:none!important;border-radius:0!important;padding:8mm!important}
+ body.printing-ready .receiptOverlay .modal{display:block!important;width:80mm!important;max-width:80mm!important;box-sizing:border-box!important;box-shadow:none!important;border-radius:0!important;padding:4mm!important}body.printing-ready .receiptOverlay .modal[data-paper="58"]{width:58mm!important;max-width:58mm!important;padding:2.5mm!important}body.printing-ready .receiptOverlay .modal[data-paper="A4"]{width:190mm!important;max-width:190mm!important;padding:8mm!important}body.printing-ready .receiptOverlay .modal[data-paper="58"] .receipt{font-size:9px!important}body.printing-ready .receiptOverlay .modal[data-paper="80"] .receipt{font-size:10px!important}body.printing-ready .receiptOverlay .modal[data-paper="58"] .receiptBrand{font-size:18px!important}body.printing-ready .receiptOverlay .modal[data-paper="58"] .receipt hr{margin:6px 0!important}
  body.printing-ready .receiptOverlay .modalClose,body.printing-ready .receiptOverlay .receiptActions{display:none!important}
  body.printing-ready .receipt{font-family:monospace!important;color:#000!important}
 }
