@@ -42,6 +42,27 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Apply KASIRA launcher logo
+        run: |
+          npm install --no-save --package-lock=false sharp
+          node --input-type=module <<'NODE'
+          import sharp from 'sharp';
+          import { mkdir, rm } from 'node:fs/promises';
+          const svg = 'public/kasira-icon.svg';
+          const densities = { mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 };
+          for (const [density, size] of Object.entries(densities)) {
+            const dir = `android/app/src/main/res/mipmap-${density}`;
+            await mkdir(dir, { recursive: true });
+            const png = await sharp(svg).resize(size, size).png().toBuffer();
+            await sharp(png).toFile(`${dir}/ic_launcher.png`);
+            await sharp(png).toFile(`${dir}/ic_launcher_round.png`);
+          }
+          // Prefer the new branded density assets over Capacitor's template adaptive icon.
+          await rm('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml', { force: true });
+          await rm('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml', { force: true });
+          console.log('KASIRA launcher icons generated for all Android density buckets.');
+          NODE
+
       - name: Set Android SDK 36 and verify
         run: |
           test -f android/variables.gradle || { echo "::error::Capacitor Android variables.gradle missing"; exit 1; }
