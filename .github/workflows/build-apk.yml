@@ -30,6 +30,12 @@ jobs:
       - name: Dependency security audit
         run: npm audit --audit-level=high
 
+      - name: Offline queue regression tests
+        run: npm run test:offline
+
+      - name: Production configuration checks
+        run: npm run check:production
+
       - name: Build web
         env:
           VITE_SUPABASE_URL: https://clylvxgilwywwkxngmnv.supabase.co
