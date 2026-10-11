@@ -123,7 +123,7 @@ function App(){
         items:items.map((i,idx)=>{const line=i.price*i.qty;const share=subtotal?discount*line/subtotal:0;const itemDiscount=idx===items.length-1?Math.max(0,discount-items.slice(0,-1).reduce((a,x)=>a+(subtotal?discount*(x.price*x.qty)/subtotal:0),0)):share;return{product_id:i.productId||i.id,quantity:i.qty,unit_price:i.price,unit_cost_at_sale:i.cost,discount:itemDiscount,total:line-itemDiscount}})
       };
       const {data:saleId,error}=await supabase.rpc("create_sale_atomic",{payload});
-      if(error){alert("Transaksi cloud gagal: "+error.message);return;}
+      if(error){if(!error.status||error.status>=500){const sale={id:"local-"+clientRequestId,number,at:new Date().toISOString(),items,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"pending_sync",cloud:false,clientRequestId};enqueueOfflineSale(cloud.businessId,{clientRequestId,payload,sale});setSales(x=>[sale,...x]);setProducts(ps=>ps.map(p=>{const i=items.find(x=>(x.productId||x.id)===p.id);return i?{...p,stock:p.stock-i.qty}:p}));setCart([]);setCustomer(null);setModal({type:"receipt",sale});alert("Server tidak dapat dijangkau. Transaksi disimpan lokal dan akan dicoba sinkronisasi ulang.");return;}alert("Transaksi cloud ditolak: "+error.message);return;}
       const sale={id:saleId,number,at:new Date().toISOString(),items,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"paid",cloud:true};
       setSales(x=>[sale,...x]);
       setProducts(ps=>ps.map(p=>{const i=items.find(x=>(x.productId||x.id)===p.id);return i?{...p,stock:p.stock-i.qty}:p}));
