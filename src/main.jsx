@@ -5,7 +5,7 @@ import"./style.css";
 import{getActiveOutlet,getMembership,supabase,supabaseConfigured}from"./supabase";
 import{enqueueOfflineSale,readOfflineQueue,removeOfflineSale}from"./offline-sync";
 
-const KASIRA_PUBLIC_URL=(import.meta.env.VITE_PUBLIC_APP_URL||"https://kasira-seven.vercel.app").replace(/\\/$/,"");
+const KASIRA_PUBLIC_URL=import.meta.env.VITE_PUBLIC_APP_URL||"https://kasira-seven.vercel.app";
 
 const seed=[
 {id:1,name:"Air Mineral 600ml",sku:"AM600",barcode:"899000100001",category:"Minuman",price:4000,cost:2500,stock:40,minStock:10,unit:"pcs"},
