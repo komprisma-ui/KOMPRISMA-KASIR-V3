@@ -112,29 +112,29 @@ function App(){
     const paid=d.payment==="Tunai"?safeNumber(d.paid):grand;
     if(paid<grand)return alert("Nominal pembayaran kurang.");
     const change=d.payment==="Tunai"?paid-grand:0;
-    const items=cart.map(i=>({...i,id:uid(),qty:safeNumber(i.qty,1),price:safeNumber(i.price),cost:safeNumber(i.cost)}));
-    for(const item of items){const p=products.find(x=>x.id===item.id);if(!p||item.qty>p.stock)return alert("Stok "+(p?.name||item.name)+" tidak mencukupi.");}
+    const items=cart.map(i=>({...i,productId:i.id,id:uid(),qty:safeNumber(i.qty,1),price:safeNumber(i.price),cost:safeNumber(i.cost)}));
+    for(const item of items){const p=products.find(x=>x.id===(item.productId||item.id));if(!p||item.qty>p.stock)return alert("Stok "+(p?.name||item.name)+" tidak mencukupi.");}
     if(cloud.ready){
       const paymentMap={Tunai:"cash",Kartu:"card",QRIS:"qris",Transfer:"transfer"};
       const payload={
         business_id:cloud.businessId,outlet_id:cloud.outletId,customer_id:customer?.id||null,
         client_request_id:clientRequestId,invoice_no:number,subtotal,discount,tax,total:grand,payment_method:paymentMap[d.payment]||"cash",
         paid_amount:paid,change_amount:change,
-        items:items.map((i,idx)=>{const line=i.price*i.qty;const share=subtotal?discount*line/subtotal:0;const itemDiscount=idx===items.length-1?Math.max(0,discount-items.slice(0,-1).reduce((a,x)=>a+(subtotal?discount*(x.price*x.qty)/subtotal:0),0)):share;return{product_id:i.id,quantity:i.qty,unit_price:i.price,unit_cost_at_sale:i.cost,discount:itemDiscount,total:line-itemDiscount}})
+        items:items.map((i,idx)=>{const line=i.price*i.qty;const share=subtotal?discount*line/subtotal:0;const itemDiscount=idx===items.length-1?Math.max(0,discount-items.slice(0,-1).reduce((a,x)=>a+(subtotal?discount*(x.price*x.qty)/subtotal:0),0)):share;return{product_id:i.productId||i.id,quantity:i.qty,unit_price:i.price,unit_cost_at_sale:i.cost,discount:itemDiscount,total:line-itemDiscount}})
       };
       const {data:saleId,error}=await supabase.rpc("create_sale_atomic",{payload});
       if(error){alert("Transaksi cloud gagal: "+error.message);return;}
       const sale={id:saleId,number,at:new Date().toISOString(),items,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"paid",cloud:true};
       setSales(x=>[sale,...x]);
-      setProducts(ps=>ps.map(p=>{const i=items.find(x=>x.id===p.id);return i?{...p,stock:p.stock-i.qty}:p}));
+      setProducts(ps=>ps.map(p=>{const i=items.find(x=>(x.productId||x.id)===p.id);return i?{...p,stock:p.stock-i.qty}:p}));
       if(customer)setCustomers(cs=>cs.map(c=>c.id===customer.id?{...c,points:(c.points||0)+Math.floor(grand/10000),totalSpent:(c.totalSpent||0)+grand}:c));
       setCart([]);setCustomer(null);setModal({type:"receipt",sale});
       return;
     }
-    if(cloud.ready&&!online){const paymentMap={Tunai:"cash",Kartu:"card",QRIS:"qris",Transfer:"transfer"};const payload={business_id:cloud.businessId,outlet_id:cloud.outletId,customer_id:customer?.id||null,client_request_id:clientRequestId,invoice_no:number,subtotal,discount,tax,total:grand,payment_method:paymentMap[d.payment]||"cash",paid_amount:paid,change_amount:change,items:items.map((i,idx)=>{const line=i.price*i.qty;const share=subtotal?discount*line/subtotal:0;const itemDiscount=idx===items.length-1?Math.max(0,discount-items.slice(0,-1).reduce((a,x)=>a+(subtotal?discount*(x.price*x.qty)/subtotal:0),0)):share;return{product_id:i.id,quantity:i.qty,unit_price:i.price,unit_cost_at_sale:i.cost,discount:itemDiscount,total:line-itemDiscount}})};const sale={id:"local-"+clientRequestId,number,at:new Date().toISOString(),items,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"pending_sync",cloud:false,clientRequestId};enqueueOfflineSale(cloud.businessId,{clientRequestId,payload,sale});setSales(x=>[sale,...x]);setProducts(ps=>ps.map(p=>{const i=items.find(x=>x.id===p.id);return i?{...p,stock:p.stock-i.qty}:p}));if(customer)setCustomers(cs=>cs.map(c=>c.id===customer.id?{...c,points:(c.points||0)+Math.floor(grand/10000),totalSpent:(c.totalSpent||0)+grand}:c));setCart([]);setCustomer(null);setModal({type:"receipt",sale});alert("Transaksi tersimpan di perangkat dan menunggu sinkronisasi. Jangan hapus data aplikasi sebelum status sinkron.");return;}
+    if(cloud.ready&&!online){const paymentMap={Tunai:"cash",Kartu:"card",QRIS:"qris",Transfer:"transfer"};const payload={business_id:cloud.businessId,outlet_id:cloud.outletId,customer_id:customer?.id||null,client_request_id:clientRequestId,invoice_no:number,subtotal,discount,tax,total:grand,payment_method:paymentMap[d.payment]||"cash",paid_amount:paid,change_amount:change,items:items.map((i,idx)=>{const line=i.price*i.qty;const share=subtotal?discount*line/subtotal:0;const itemDiscount=idx===items.length-1?Math.max(0,discount-items.slice(0,-1).reduce((a,x)=>a+(subtotal?discount*(x.price*x.qty)/subtotal:0),0)):share;return{product_id:i.productId||i.id,quantity:i.qty,unit_price:i.price,unit_cost_at_sale:i.cost,discount:itemDiscount,total:line-itemDiscount}})};const sale={id:"local-"+clientRequestId,number,at:new Date().toISOString(),items,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"pending_sync",cloud:false,clientRequestId};enqueueOfflineSale(cloud.businessId,{clientRequestId,payload,sale});setSales(x=>[sale,...x]);setProducts(ps=>ps.map(p=>{const i=items.find(x=>(x.productId||x.id)===p.id);return i?{...p,stock:p.stock-i.qty}:p}));if(customer)setCustomers(cs=>cs.map(c=>c.id===customer.id?{...c,points:(c.points||0)+Math.floor(grand/10000),totalSpent:(c.totalSpent||0)+grand}:c));setCart([]);setCustomer(null);setModal({type:"receipt",sale});alert("Transaksi tersimpan di perangkat dan menunggu sinkronisasi. Jangan hapus data aplikasi sebelum status sinkron.");return;}
     const sale={id:uid(),number,at:new Date().toISOString(),items,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"paid"};
     setSales(x=>[sale,...x]);
-    setProducts(ps=>ps.map(p=>{const i=items.find(x=>x.id===p.id);return i?{...p,stock:p.stock-i.qty}:p}));
+    setProducts(ps=>ps.map(p=>{const i=items.find(x=>(x.productId||x.id)===p.id);return i?{...p,stock:p.stock-i.qty}:p}));
     if(d.payment==="Tunai")setCash(cs=>[{id:uid(),at:new Date().toISOString(),type:"Masuk",amount:grand,note:"Penjualan "+sale.number,refId:sale.id},...cs]);
     const hpp=items.reduce((a,i)=>a+safeNumber(i.cost)*safeNumber(i.qty),0);
     postJournal(setJournal,"Penjualan "+sale.number,[
