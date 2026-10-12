@@ -61,7 +61,7 @@ function App(){
    const {data:{session}}=await supabase.auth.getSession();
    if(!session?.user?.id)return;
    const {membership,error}=await getMembership(session.user.id);
-   if(error||!membership){const cached=load("kasira_cloud_context",null);if(cached?.userId===session.user.id&&cached.businessId&&cached.outletId)setCloud({...cached,ready:true});return;}
+   if(error||!membership){console.error("KASIRA membership unavailable:",error||"Membership tidak ditemukan.");setCloud({ready:false,businessId:null,outletId:null,userId:session.user.id,role:null});return;}
    const {outlet}=await getActiveOutlet(membership.business_id);
    if(!outlet)return;
    const {data:rows,error:productsError}=await supabase
@@ -171,7 +171,7 @@ function App(){
      }
      return {...draft,id:productId,sku:productPayload.sku,barcode:productPayload.barcode||"",name:productPayload.name,category:productPayload.category,cost:productPayload.buy_price,price:productPayload.sell_price,minStock:productPayload.min_stock,stock:Number(draft.stock)||0,unit:draft.unit||"pcs",active:true};
    }
-   return {...draft,id:draft.id||Date.now(),sku:productPayload.sku,barcode:productPayload.barcode||"",name:productPayload.name,category:productPayload.category,cost:productPayload.buy_price,price:productPayload.sell_price,minStock:productPayload.min_stock,stock:Number(draft.stock)||0,unit:draft.unit||"pcs",active:true};
+   throw new Error("Koneksi cloud KASIRA belum siap. Pastikan Anda sudah login, terdaftar sebagai anggota toko, dan outlet berhasil dimuat. Produk tidak disimpan secara lokal agar tidak hilang saat halaman dimuat ulang.");
  };
  const exportData=()=>{let d={version:3,exportedAt:new Date().toISOString(),products,sales,customers,purchases,cash,returns,journal,accounts,expenses,payroll,assets,inventories,employees,attendance,settings},a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="KASIRA-backup.json";a.click()};
  const importData=e=>{let f=e.target.files?.[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);const arr=["products","sales","customers","purchases","cash","returns"];if(!d||!(d.version===2||d.version===3)||!arr.every(k=>Array.isArray(d[k]))||!d.settings||typeof d.settings!=="object")throw new Error("invalid");if(!confirm("Pulihkan backup KASIRA ini? Data aktif akan diganti."))return;setProducts(d.products);setSales(d.sales);setCustomers(d.customers);setPurchases(d.purchases);setCash(d.cash);setReturns(d.returns);setJournal(Array.isArray(d.journal)?d.journal:[]);setAccounts(Array.isArray(d.accounts)?d.accounts:DEFAULT_ACCOUNTS);setExpenses(Array.isArray(d.expenses)?d.expenses:[]);setPayroll(Array.isArray(d.payroll)?d.payroll:[]);setAssets(Array.isArray(d.assets)?d.assets:[]);setInventories(Array.isArray(d.inventories)?d.inventories:[]);setEmployees(Array.isArray(d.employees)?d.employees:[]);setAttendance(Array.isArray(d.attendance)?d.attendance:[]);setSettings(d.settings);alert("Backup berhasil dipulihkan.")}catch{alert("Backup tidak valid atau bukan backup KASIRA v2/v3.")}finally{e.target.value=""}};r.readAsText(f)};
