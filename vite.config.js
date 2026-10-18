@@ -1,7 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// Vercel and local builds keep the root path. GitHub Pages uses a repository subpath.
+const base = process.env.VITE_BASE_PATH || "/";
+
 export default defineConfig({
+  base,
   plugins: [react()],
   build: {
     target: "es2020",
