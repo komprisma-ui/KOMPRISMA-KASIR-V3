@@ -40,11 +40,14 @@ const authSource=fs.readFileSync("src/auth-overlay.jsx","utf8");
 if(authSource.includes(".innerHTML=")) throw new Error("Unsafe innerHTML assignment detected in authentication UI.");
 for(const marker of [
   "supabase.auth.signUp",
+  "resetPasswordForEmail(",
+  'PASSWORD_RECOVERY',
+  'updateUser({ password: newPassword })',
   'rpc("kasira_complete_owner_signup"',
   'rpc("kasira_accept_invitation"',
   'rpc("kasira_create_invitation"',
   'rpc("kasira_list_team"'
-]) if(!authSource.includes(marker)) throw new Error("Multi-user authentication safeguard missing: "+marker);
+]) if(!authSource.includes(marker)) throw new Error("Multi-user authentication/recovery safeguard missing: "+marker);
 
 const onboardingMigration=fs.readFileSync("supabase/migrations/20261019_kasira_021_multi_user_onboarding.sql","utf8");
 for(const marker of [
