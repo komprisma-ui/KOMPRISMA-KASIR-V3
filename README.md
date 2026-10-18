@@ -13,13 +13,13 @@ KASIRA is a responsive point-of-sale and business-management application built w
 - Atomic cloud checkout with idempotency, server-authoritative price/HPP validation, and stock protection.
 - Offline/local persistence fallback with an offline-queue test.
 - Product, stock, purchasing, customer, sales, reporting, accounting, assets, inventory, employee, attendance, cash, and returns modules.
-- Production security migration 011 removes permissive legacy RLS policies. Migration 021 adds isolated owner onboarding and secure staff invitations.
+- Production security migration 011 removes permissive legacy RLS policies. Migration 021 adds isolated owner onboarding and secure staff invitations; migration 022 adds an explicit deny-all RLS policy for direct invitation-table access.
 - Production guard checks for transaction safeguards, auth flows, migration presence, invitation RLS, and restricted RPC access.
 
 ## Current verification state
 
 - The connected KASIRA Supabase project is active and healthy.
-- Database migrations through `kasira_021_multi_user_onboarding` are recorded. Read-only verification confirmed the invitation table, RLS, and all four onboarding/team RPC functions exist. The invitation table has no direct client policies; anonymous execution of the invitation RPC is denied.
+- Database migrations through `kasira_022_invitation_deny_policy` are recorded. Read-only verification confirmed the invitation table, RLS, and all four onboarding/team RPC functions exist. Direct invitation-table reads/writes are denied and anonymous RPC execution is denied.
 - Vercel has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` variables configured for Production, Preview, and Development.
 - The multi-user UI and production guards are on branch `feat/kasira-multi-user-onboarding`; they are not yet promoted to the production branch.
 - A successful deployment status does not substitute for an end-to-end sign-up/sign-in/invitation test. The release candidate still requires CI/build verification and real-device acceptance.
