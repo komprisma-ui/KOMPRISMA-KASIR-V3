@@ -11,6 +11,7 @@ const required=[
   "supabase/migrations/20261004_kasira_010_transaction_bypass_hardening.sql",
   "supabase/migrations/20261007_kasira_011_rls_bypass_hardening.sql",
   "supabase/migrations/20261019_kasira_021_multi_user_onboarding.sql",
+  "supabase/migrations/20261019_kasira_022_invitation_deny_policy.sql",
   "public/privacy-policy.html","public/delete-account.html"
 ];
 for(const file of required) if(!fs.existsSync(file)) throw new Error("Missing required file: "+file);
@@ -53,6 +54,10 @@ for(const marker of [
   "pg_catalog.hashtextextended",
   "extensions.digest"
 ]) if(!onboardingMigration.includes(marker)) throw new Error("Invitation/onboarding security guard missing: "+marker);
+
+const invitationPolicyMigration=fs.readFileSync("supabase/migrations/20261019_kasira_022_invitation_deny_policy.sql","utf8");
+for(const marker of ["for all","to anon, authenticated","using (false)","with check (false)"])
+  if(!invitationPolicyMigration.includes(marker)) throw new Error("Invitation direct-access deny policy missing: "+marker);
 
 const migration=fs.readFileSync("supabase/migrations/20261007_kasira_011_rls_bypass_hardening.sql","utf8");
 for(const forbidden of ["drop policy if exists product_member_all","drop policy if exists stock_member_all","drop policy if exists sale_member_all","drop policy if exists sale_item_member_all"])
