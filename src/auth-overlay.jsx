@@ -479,7 +479,7 @@ function Login() {
         <span>Password minimal 10 karakter</span><span>Konfirmasi email mengikuti pengaturan Supabase</span>
       </div>}
 
-      <small className="kasiraSecurityNote">Sesi autentikasi dan hak akses bisnis diverifikasi melalui Supabase Auth + RLS.<br/><a href="/privacy-policy.html" target="_blank" rel="noreferrer">Kebijakan Privasi</a> · <a href="/delete-account.html" target="_blank" rel="noreferrer">Penghapusan Akun</a></small>
+      <small className="kasiraSecurityNote">Sesi autentikasi dan hak akses bisnis diverifikasi melalui Supabase Auth + RLS.<br/><a href={import.meta.env.BASE_URL + "privacy-policy.html"} target="_blank" rel="noreferrer">Kebijakan Privasi</a> · <a href={import.meta.env.BASE_URL + "delete-account.html"} target="_blank" rel="noreferrer">Penghapusan Akun</a></small>
     </div>
   </div>;
 }
