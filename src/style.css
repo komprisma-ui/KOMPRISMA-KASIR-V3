@@ -72,3 +72,15 @@ html[data-theme="dark"] .receipt{color:var(--ink)}
 .inviteForm{border-top:1px solid var(--line);margin-top:18px;padding-top:18px}.inviteForm select{width:100%;border:1px solid var(--line);border-radius:11px;background:var(--card2);color:var(--ink);padding:12px;min-height:42px}
 
 @media print{body.kasira-report-print .reportPrintRoot .pageHead{display:block!important;margin:0 0 12px!important}body.kasira-report-print .reportPrintRoot .pageHead .scan,body.kasira-report-print .reportPrintRoot .pageHead .primary,body.kasira-report-print .reportPrintRoot .pageHead .ghost{display:none!important}}
+
+
+/* Default demo login stays visibly separate from cloud sign-in. */
+.demoAccessDivider{display:flex;align-items:center;gap:10px;margin:5px 0 0;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:1px}
+.demoAccessDivider:before,.demoAccessDivider:after{content:"";height:1px;flex:1;background:var(--line)}
+.demoNote{display:block;line-height:1.6;margin-top:0}
+.demoRowActions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;max-width:100%}
+.demoRowActions select{border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);padding:8px;font-size:10px;min-width:110px}
+.memberIdentity{min-width:0;display:grid;gap:5px}
+.memberIdentity b{overflow-wrap:anywhere}
+.memberIdentity small{font-size:8px;color:var(--muted);overflow-wrap:anywhere}
+@media(max-width:640px){.demoRowActions{justify-content:flex-start;width:100%;margin-top:8px}.demoRowActions select{flex:1;min-width:90px}.settingsCard .settingAction{flex-wrap:wrap}}
