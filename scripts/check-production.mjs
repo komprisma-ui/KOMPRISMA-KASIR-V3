@@ -9,7 +9,8 @@ const required=[
   "supabase/migrations/20261003_kasira_008_idempotency_stock_audit.sql",
   "supabase/migrations/20261004_kasira_009_final_role_hardening.sql",
   "supabase/migrations/20261004_kasira_010_transaction_bypass_hardening.sql",
-  "supabase/migrations/20261007_kasira_011_rls_bypass_hardening.sql",\n  "supabase/migrations/20261019_kasira_021_multi_user_onboarding.sql",
+  "supabase/migrations/20261007_kasira_011_rls_bypass_hardening.sql",
+  "supabase/migrations/20261019_kasira_021_multi_user_onboarding.sql",
   "public/privacy-policy.html","public/delete-account.html"
 ];
 for(const file of required) if(!fs.existsSync(file)) throw new Error("Missing required file: "+file);
