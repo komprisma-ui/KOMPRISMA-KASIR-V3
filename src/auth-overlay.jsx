@@ -242,35 +242,43 @@ function Login() {
     if (mode === "login") {
       const token = loginInviteToken.trim();
       authFlowInProgressRef.current = Boolean(token);
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password
-      });
-      if (loginError) {
-        authFlowInProgressRef.current = false;
-        setError(friendlyError(loginError));
-        setPassword("");
-        setLoading(false);
-        return;
-      }
-
-      const signedInSession = data?.session || null;
-      const userId = data?.user?.id || signedInSession?.user?.id;
-      if (token && userId) {
-        const stored = writePendingOnboarding({ kind: "invite", userId, token });
-        if (!stored) {
-          authFlowInProgressRef.current = false;
-          setError("Perangkat tidak mengizinkan penyimpanan kode undangan. Aktifkan penyimpanan browser atau coba lewat browser biasa.");
-          try { await supabase.auth.signOut(); } catch { /* Ignore sign-out errors. */ }
+      try {
+        const loginResult = await Promise.race([
+          supabase.auth.signInWithPassword({ email: normalizedEmail, password }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Koneksi ke layanan login terlalu lama. Periksa internet lalu coba lagi.")), 15000))
+        ]);
+        const { data, error: loginError } = loginResult;
+        if (loginError) {
+          setError(friendlyError(loginError));
+          setPassword("");
           setLoading(false);
+          authFlowInProgressRef.current = false;
           return;
         }
+
+        const signedInSession = data?.session || null;
+        const userId = data?.user?.id || signedInSession?.user?.id;
+        if (token && userId) {
+          const stored = writePendingOnboarding({ kind: "invite", userId, token });
+          if (!stored) {
+            setError("Perangkat tidak mengizinkan penyimpanan kode undangan. Aktifkan penyimpanan browser atau coba lewat browser biasa.");
+            try { await supabase.auth.signOut(); } catch { /* Ignore sign-out errors. */ }
+            setLoading(false);
+            authFlowInProgressRef.current = false;
+            return;
+          }
+        }
+        setPassword("");
+        if (signedInSession) setSession(signedInSession);
+        // The session effect performs invitation acceptance and waits for membership before showing the app.
+        if (!signedInSession) setLoading(false);
+      } catch (loginFailure) {
+        setError(friendlyError(loginFailure));
+        setPassword("");
+        setLoading(false);
+      } finally {
+        authFlowInProgressRef.current = false;
       }
-      authFlowInProgressRef.current = false;
-      setPassword("");
-      if (signedInSession) setSession(signedInSession);
-      // The session effect performs invitation acceptance and waits for membership before showing the app.
-      if (!signedInSession) setLoading(false);
       return;
     }
 
