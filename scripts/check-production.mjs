@@ -9,7 +9,7 @@ const required=[
   "supabase/migrations/20261003_kasira_008_idempotency_stock_audit.sql",
   "supabase/migrations/20261004_kasira_009_final_role_hardening.sql",
   "supabase/migrations/20261004_kasira_010_transaction_bypass_hardening.sql",
-  "supabase/migrations/20261007_kasira_011_rls_bypass_hardening.sql",
+  "supabase/migrations/20261007_kasira_011_rls_bypass_hardening.sql",\n  "supabase/migrations/20261019_kasira_021_multi_user_onboarding.sql",
   "public/privacy-policy.html","public/delete-account.html"
 ];
 for(const file of required) if(!fs.existsSync(file)) throw new Error("Missing required file: "+file);
@@ -36,6 +36,22 @@ for(const marker of ["client_request_id","unit_cost_at_sale","cloudSales","creat
 
 const authSource=fs.readFileSync("src/auth-overlay.jsx","utf8");
 if(authSource.includes(".innerHTML=")) throw new Error("Unsafe innerHTML assignment detected in authentication UI.");
+for(const marker of [
+  "supabase.auth.signUp",
+  'rpc("kasira_complete_owner_signup"',
+  'rpc("kasira_accept_invitation"',
+  'rpc("kasira_create_invitation"',
+  'rpc("kasira_list_team"'
+]) if(!authSource.includes(marker)) throw new Error("Multi-user authentication safeguard missing: "+marker);
+
+const onboardingMigration=fs.readFileSync("supabase/migrations/20261019_kasira_021_multi_user_onboarding.sql","utf8");
+for(const marker of [
+  "alter table public.kasira_invitations enable row level security",
+  "revoke all on table public.kasira_invitations from public, anon, authenticated",
+  "grant execute on function public.kasira_accept_invitation(text) to authenticated",
+  "pg_catalog.hashtextextended",
+  "extensions.digest"
+]) if(!onboardingMigration.includes(marker)) throw new Error("Invitation/onboarding security guard missing: "+marker);
 
 const migration=fs.readFileSync("supabase/migrations/20261007_kasira_011_rls_bypass_hardening.sql","utf8");
 for(const forbidden of ["drop policy if exists product_member_all","drop policy if exists stock_member_all","drop policy if exists sale_member_all","drop policy if exists sale_item_member_all"])
