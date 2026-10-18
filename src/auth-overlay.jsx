@@ -70,6 +70,7 @@ function Login() {
   const [signupKind, setSignupKind] = useState("owner");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [signupInviteToken, setSignupInviteToken] = useState("");
@@ -93,7 +94,13 @@ function Login() {
       return;
     }
     let alive = true;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === "PASSWORD_RECOVERY" && alive) {
+        setMode("reset-password");
+        setError("");
+        setNotice("");
+        setLoading(false);
+      }
       if (authFlowInProgressRef.current && next) return;
       if (alive) setSession(next || null);
     });
@@ -205,12 +212,32 @@ function Login() {
       return;
     }
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail || !password) {
-      setError("Email dan password wajib diisi.");
+    if (!normalizedEmail || (mode !== "forgot" && !password)) {
+      setError(mode === "forgot" ? "Email wajib diisi." : "Email dan password wajib diisi.");
       return;
     }
 
     setLoading(true);
+
+    if (mode === "forgot") {
+      try {
+        const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(
+          normalizedEmail,
+          { redirectTo: KASIRA_PUBLIC_URL }
+        );
+        if (recoveryError) {
+          setError(friendlyError(recoveryError));
+        } else {
+          setNotice("Jika email tersebut terdaftar, tautan pemulihan telah dikirim. Periksa kotak masuk dan folder spam.");
+          setMode("forgot");
+        }
+      } catch (recoveryError) {
+        setError(friendlyError(recoveryError));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     if (mode === "login") {
       const token = loginInviteToken.trim();
@@ -325,9 +352,61 @@ function Login() {
     setLoading(false);
   };
 
+  const submitNewPassword = async (event) => {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    if (!supabase) {
+      setError("Layanan autentikasi belum tersedia.");
+      return;
+    }
+    if (newPassword.length < 10) {
+      setError("Password baru minimal 10 karakter.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) throw updateError;
+      await supabase.auth.signOut();
+      setSession(null);
+      setPassword("");
+      setNewPassword("");
+      setMode("login");
+      setNotice("Password berhasil diperbarui. Silakan masuk menggunakan password baru.");
+    } catch (updateError) {
+      setError(friendlyError(updateError));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try { await supabase?.auth.signOut(); } finally { setSession(null); }
   };
+
+  if (mode === "reset-password") return <div className="kasiraAuth">
+    <div className="kasiraAuthCard">
+      <div className="kasiraAuthTop">
+        <div className="kasiraLogo">K</div>
+        <div><b>KASIRA</b><small>Pemulihan akun</small></div>
+        <button className="kasiraThemeBtn" type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Ubah tema">{theme === "dark" ? "☀" : "☾"}</button>
+      </div>
+      <div className="kasiraAuthTitle">Buat password baru</div>
+      <p className="kasiraAuthDesc">Gunakan password baru minimal 10 karakter untuk akun Anda.</p>
+      <form onSubmit={submitNewPassword}>
+        <label>Password baru
+          <div className="kasiraPass">
+            <input type={showPassword ? "text" : "password"} autoComplete="new-password" minLength={10} value={newPassword} onChange={event => { setNewPassword(event.target.value); setError(""); }} placeholder="Minimal 10 karakter" required />
+            <button type="button" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "Sembunyikan" : "Lihat"}</button>
+          </div>
+        </label>
+        {error && <div className="kasiraAuthError" role="alert">{error}</div>}
+        <button className="kasiraLoginBtn" disabled={loading}>{loading ? "Menyimpan…" : "Simpan password baru"}</button>
+      </form>
+      <small className="kasiraSecurityNote">Jangan bagikan tautan pemulihan kepada orang lain.</small>
+    </div>
+  </div>;
 
   if (loading) return <div className="kasiraAuth"><div className="kasiraAuthCard"><b>Memeriksa keamanan KASIRA…</b><small>Menyiapkan sesi dan memeriksa hak akses database.</small></div></div>;
   if (session?.kasira) return <Session session={session} theme={theme} setTheme={setTheme} logout={logout}/>;
@@ -340,13 +419,13 @@ function Login() {
         <button className="kasiraThemeBtn" type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Ubah tema">{theme === "dark" ? "☀" : "☾"}</button>
       </div>
 
-      <div className="kasiraAuthTitle">{mode === "login" ? "Masuk ke KASIRA" : "Daftar akun KASIRA"}</div>
-      <p className="kasiraAuthDesc">{mode === "login" ? "Masuk menggunakan akun bisnis yang sudah terdaftar." : "Buat ruang usaha baru atau bergabung dengan undangan dari pengelola."}</p>
+      <div className="kasiraAuthTitle">{mode === "login" ? "Masuk ke KASIRA" : mode === "signup" ? "Daftar akun KASIRA" : "Pemulihan password"}</div>
+      <p className="kasiraAuthDesc">{mode === "login" ? "Masuk menggunakan akun bisnis yang sudah terdaftar." : mode === "signup" ? "Buat ruang usaha baru atau bergabung dengan undangan dari pengelola." : "Masukkan email akun untuk menerima tautan penggantian password."}</p>
 
-      <div className="kasiraModeTabs" role="tablist" aria-label="Mode autentikasi">
+      {(mode === "login" || mode === "signup") ? <div className="kasiraModeTabs" role="tablist" aria-label="Mode autentikasi">
         <button type="button" className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setError(""); setNotice(""); }}>Masuk</button>
         <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => { setMode("signup"); setError(""); setNotice(""); }}>Daftar</button>
-      </div>
+      </div> : <button type="button" className="kasiraBackLogin" onClick={() => { setMode("login"); setError(""); setNotice(""); }}>← Kembali ke Masuk</button>}
 
       {!supabaseConfigured && <div className="kasiraAuthError">Autentikasi cloud belum dikonfigurasi pada deployment ini.</div>}
 
@@ -370,12 +449,14 @@ function Login() {
         <label>Email
           <input autoFocus={mode === "login"} type="email" inputMode="email" autoComplete="email" maxLength={254} value={email} onChange={e => { setEmail(e.target.value); setError(""); }} placeholder="nama@perusahaan.com" required/>
         </label>
-        <label>Password
+        {mode !== "forgot" && <label>Password
           <div className="kasiraPass">
             <input type={showPassword ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "signup" ? 10 : undefined} value={password} onChange={e => { setPassword(e.target.value); setError(""); }} placeholder={mode === "signup" ? "Minimal 10 karakter" : "Password akun"} required/>
             <button type="button" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "Sembunyikan" : "Lihat"}</button>
           </div>
-        </label>
+        </label>}
+
+        {mode === "login" && <button type="button" className="kasiraForgotBtn" onClick={() => { setMode("forgot"); setError(""); setNotice(""); setPassword(""); }}>Lupa password?</button>}
 
         {mode === "login" && <label>Kode undangan (opsional)
           <input type="text" autoComplete="off" spellCheck="false" maxLength={80} value={loginInviteToken} onChange={e => setLoginInviteToken(e.target.value.toUpperCase().replace(/\s+/g, ""))} placeholder="Isi bila Anda menerima undangan"/>
@@ -384,10 +465,10 @@ function Login() {
 
         {error && <div className="kasiraAuthError" role="alert">{error}</div>}
         {notice && <div className="kasiraAuthNotice" role="status">{notice}</div>}
-        <button className="kasiraLoginBtn" disabled={loading || !supabaseConfigured}>{loading ? "Memproses…" : mode === "login" ? "Masuk" : "Buat akun"}</button>
+        <button className="kasiraLoginBtn" disabled={loading || !supabaseConfigured}>{loading ? "Memproses…" : mode === "login" ? "Masuk" : mode === "signup" ? "Buat akun" : "Kirim tautan reset"}</button>
       </form>
 
-      {mode === "login" ? <div className="kasiraRoleInfo">
+      {mode === "forgot" ? null : mode === "login" ? <div className="kasiraRoleInfo">
         <b>Hak akses diatur oleh database</b>
         <span>Owner • semua modul</span><span>Manager • operasional & laporan</span>
         <span>Kasir • transaksi</span><span>Gudang / karyawan • sesuai peran</span>
@@ -619,7 +700,7 @@ style.textContent =
   ".kasiraAuthError{padding:10px;border-radius:9px;background:#fff0f0;color:#b52e36;font-size:11px;margin:8px 0;overflow-wrap:anywhere}.kasiraAuthNotice{padding:10px;border-radius:9px;background:#eef7ff;color:#174f84;font-size:11px;margin:8px 0;overflow-wrap:anywhere}html[data-theme=\"dark\"] .kasiraAuthNotice{background:#102943;color:#b7dcff}" +
   ".kasiraLoginBtn{width:100%;margin-top:8px;padding:13px;border-radius:10px;background:linear-gradient(135deg,#0875ff,#00a7ff);color:#fff;font-weight:800}.kasiraLoginBtn:disabled{opacity:.5;cursor:not-allowed}" +
   ".kasiraModeTabs,.kasiraSignupChoice{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:#f1f5fa;border-radius:12px;margin:0 0 16px}.kasiraModeTabs button,.kasiraSignupChoice button{padding:10px;border-radius:9px;background:transparent;color:#6c7b91;font-size:11px;font-weight:700}.kasiraModeTabs button.active,.kasiraSignupChoice button.active{background:#fff;color:#075fd0;box-shadow:0 2px 10px rgba(15,43,82,.1)}html[data-theme=\"dark\"] .kasiraModeTabs,html[data-theme=\"dark\"] .kasiraSignupChoice{background:#0c1626}html[data-theme=\"dark\"] .kasiraModeTabs button.active,html[data-theme=\"dark\"] .kasiraSignupChoice button.active{background:#21395b;color:#8cc5ff}" +
-  ".kasiraFieldHint{display:block;color:#8a96a8;font-size:9px;margin-top:5px;line-height:1.45}.kasiraRoleInfo{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:17px;padding:12px;background:#f6f9fc;border-radius:11px;font-size:9px;color:#718096}.kasiraRoleInfo b{grid-column:1/-1;color:#42536c}.kasiraSecurityNote{display:block;text-align:center;color:#98a4b4;font-size:9px;line-height:1.6;margin-top:14px}.kasiraSecurityNote a{color:#6a89ad}" +
+  ".kasiraFieldHint{display:block;color:#8a96a8;font-size:9px;margin-top:5px;line-height:1.45}.kasiraForgotBtn,.kasiraBackLogin{display:block;margin:0 0 10px auto;padding:7px 0;background:transparent;color:#0875ff;font-size:10px;font-weight:700}.kasiraBackLogin{margin:0 0 16px}.kasiraRoleInfo{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:17px;padding:12px;background:#f6f9fc;border-radius:11px;font-size:9px;color:#718096}.kasiraRoleInfo b{grid-column:1/-1;color:#42536c}.kasiraSecurityNote{display:block;text-align:center;color:#98a4b4;font-size:9px;line-height:1.6;margin-top:14px}.kasiraSecurityNote a{color:#6a89ad}" +
   ".kasiraSessionTools{display:flex;gap:6px;align-items:center;margin-left:10px}.kasiraSessionTools button{min-width:34px;height:34px;padding:0 7px;border-radius:9px;background:#f2f6fb;color:#52627a;font-size:15px}.kasiraSessionTools button:last-child{color:#d6454a}.kasiraSessionTools .kasiraTeamBtn{font-size:10px;font-weight:800}html[data-theme=\"dark\"] .kasiraSessionTools button{background:#17243a;color:#c9d5e5}" +
   ".kasiraTeamBackdrop{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(2,9,22,.68);backdrop-filter:blur(8px);font-family:Inter,system-ui,sans-serif;color:#182538}" +
   ".kasiraTeamDialog{width:min(920px,100%);max-height:calc(100dvh - 28px);overflow:auto;border-radius:20px;background:#fff;box-shadow:0 32px 100px rgba(0,0,0,.35);padding:22px}html[data-theme=\"dark\"] .kasiraTeamDialog{background:#111b2d;color:#e8eef8;border:1px solid #2b3a53}" +
