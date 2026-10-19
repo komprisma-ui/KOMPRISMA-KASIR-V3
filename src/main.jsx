@@ -224,6 +224,30 @@ function App(){
    if(error)throw error;
    return true;
  };
+ const archiveProductCloud=async product=>{
+   if(isDemoMode())return true;
+   if(!cloud.ready||!supabase||!cloud.businessId)throw new Error("Sesi bisnis cloud belum siap.");
+   if(!["owner","manager"].includes(cloud.role))throw new Error("Hanya Owner atau Manager yang dapat mengarsipkan produk.");
+   const{error}=await supabase.from("products").update({active:false}).eq("id",product.id).eq("business_id",cloud.businessId);
+   if(error)throw error;
+   return true;
+ };
+ const adjustStockCloud=async({productId,delta})=>{
+   if(!cloud.ready||!supabase||!cloud.businessId||!cloud.outletId)throw new Error("Sesi bisnis cloud belum siap.");
+   const{data,error}=await supabase.rpc("kasira_adjust_stock",{p_business_id:cloud.businessId,p_outlet_id:cloud.outletId,p_product_id:productId,p_delta:Number(delta)});
+   if(error)throw error;
+   if(!Number.isFinite(Number(data)))throw new Error("Server tidak mengembalikan jumlah stok yang valid.");
+   return Number(data);
+ };
+ const savePurchaseCloud=async draft=>{
+   if(!cloud.ready||!supabase||!cloud.businessId||!cloud.outletId)throw new Error("Sesi bisnis cloud belum siap.");
+   const invoice=String(draft.invoice||"").trim();
+   if(!invoice)throw new Error("Nomor invoice pembelian wajib diisi.");
+   const{data,error}=await supabase.rpc("kasira_create_purchase",{payload:{business_id:cloud.businessId,outlet_id:cloud.outletId,invoice_no:invoice,supplier_name:String(draft.supplier||"").trim(),product_id:draft.productId,quantity:Number(draft.qty),unit_cost:Number(draft.cost)}});
+   if(error)throw error;
+   if(!data?.purchase_id||!data?.cash_transaction_id)throw new Error("Server tidak mengembalikan referensi pembelian dan kas.");
+   return{id:data.purchase_id,cashId:data.cash_transaction_id,at:data.created_at||new Date().toISOString(),invoice:data.invoice_no||invoice,supplier:data.supplier_name||draft.supplier||"Umum",productId:data.product_id||draft.productId,qty:Number(data.quantity)||Number(draft.qty),cost:Number(data.unit_cost)||Number(draft.cost),total:Number(data.total)||Number(draft.qty)*Number(draft.cost),stockQuantity:Number(data.stock_quantity)};
+ };
  const exportData=()=>{let d={version:3,exportedAt:new Date().toISOString(),products,sales,customers,purchases,cash,returns,journal,accounts,expenses,payroll,assets,inventories,employees,attendance,settings},a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="KASIRA-backup.json";a.click()};
  const importData=e=>{let f=e.target.files?.[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);const arr=["products","sales","customers","purchases","cash","returns"];if(!d||!(d.version===2||d.version===3)||!arr.every(k=>Array.isArray(d[k]))||!d.settings||typeof d.settings!=="object")throw new Error("invalid");if(!confirm("Pulihkan backup KASIRA ini? Data aktif akan diganti."))return;setProducts(d.products);setSales(d.sales);setCustomers(d.customers);setPurchases(d.purchases);setCash(d.cash);setReturns(d.returns);setJournal(Array.isArray(d.journal)?d.journal:[]);setAccounts(Array.isArray(d.accounts)?d.accounts:DEFAULT_ACCOUNTS);setExpenses(Array.isArray(d.expenses)?d.expenses:[]);setPayroll(Array.isArray(d.payroll)?d.payroll:[]);setAssets(Array.isArray(d.assets)?d.assets:[]);setInventories(Array.isArray(d.inventories)?d.inventories:[]);setEmployees(Array.isArray(d.employees)?d.employees:[]);setAttendance(Array.isArray(d.attendance)?d.attendance:[]);setSettings(d.settings);alert("Backup berhasil dipulihkan.")}catch{alert("Backup tidak valid atau bukan backup KASIRA v2/v3.")}finally{e.target.value=""}};r.readAsText(f)};
  if(!authChecked)return <div className="authScreen"><section className="authCard"><img src={import.meta.env.BASE_URL + "kasira-icon.svg"} alt="KASIRA"/><h1>Memeriksa sesi…</h1><p>Menyiapkan keamanan akun KASIRA.</p></section></div>;
