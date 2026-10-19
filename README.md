@@ -1,59 +1,62 @@
-# KASIRA — Professional POS v0.5.2 release candidate
+# KASIRA — Professional POS & Business Management
 
-KASIRA is a responsive point-of-sale and business-management application built with React, Vite, Capacitor, Supabase Auth, and PostgreSQL.
+**Release candidate:** 0.5.3-rc  
+**Web test release:** https://komprisma-ui.github.io/KOMPRISMA-KASIR-V3/  
+**Production Vercel domain (unchanged):** https://kasira-seven.vercel.app
 
-## Implemented safeguards and features
+KASIRA is a responsive cashier and business-management application built with React, Vite, Capacitor, Supabase Auth, and PostgreSQL. This repository contains the web release-candidate branch. A successful GitHub Pages deploy and smoke test do not equal full commercial acceptance or a signed Android release.
 
-- Responsive POS for phone, tablet, and desktop, with light/dark themes.
-- Supabase Auth login and email/password sign-up.
-- Multi-tenant business onboarding: a verified user can create their own business and main outlet; tenant creation and owner assignment happen in a trusted database function.
-- Staff onboarding through a one-time, email-bound invitation code that expires after seven days.
-- Owner/Manager user management: issue invitations and review active memberships and invitation status. The invitation code is shown only once; sending it to the recipient remains a manual step.
-- Database-enforced role checks and Row Level Security (RLS). Client-side menu hiding is a usability feature, not the security boundary.
-- Atomic cloud checkout with idempotency, server-authoritative price/HPP validation, and stock protection.
-- Offline/local persistence fallback with an offline-queue test.
-- Product, stock, purchasing, customer, sales, reporting, accounting, assets, inventory, employee, attendance, cash, and returns modules.
-- Production security migration 011 removes permissive legacy RLS policies. Migration 021 adds isolated owner onboarding and secure staff invitations; migration 022 adds an explicit deny-all RLS policy for direct invitation-table access.
-- Production guard checks for transaction safeguards, auth flows, migration presence, invitation RLS, and restricted RPC access.
+## Implemented and verified in the current branch
 
-## Current verification state
+- Responsive interface for phone/tablet/desktop, light and dark appearance.
+- Supabase email/password login, account sign-up, password-recovery email request, and first-owner setup flow.
+- Multi-tenant business onboarding via database RPC; a verified account creates its own business and main outlet.
+- Staff invitation tokens are email-bound, hashed in the database, single-use, and expire after seven days.
+- Owner/Manager invitation UI and invitation status history. The code is displayed once and must be shared manually; automatic email delivery is not implemented in this UI.
+- Owner role changes and membership removal go through restricted database RPCs and audit logging. Anonymous execute privilege was read-only checked as denied for owner onboarding/invitation/member-management RPCs.
+- Database-level business membership checks and RLS; client-side menu hiding is only an interface convenience.
+- Cloud checkout path uses `create_sale_atomic` for server-validated pricing/HPP, idempotency and stock protection. Offline sales are queued with client request IDs and retried when online.
+- Product catalogue and outlet stock load from Supabase; product save path targets business-scoped tables. Customer and sales history are queried for the active business/outlet.
+- Per-business local cache namespace and a fail-closed loading screen protect the UI while cloud membership context is initialized.
+- Automated checks now run offline queue tests, production guards, Vite compilation, built-asset path checks, deploy the branch, and then request the published HTML/JavaScript/CSS to confirm the login UI and invite-RPC code are present/reachable.
 
-- The connected KASIRA Supabase project is active and healthy.
-- Database migrations through `kasira_022_invitation_deny_policy` are recorded. Read-only verification confirmed the invitation table, RLS, and all four onboarding/team RPC functions exist. Direct invitation-table reads/writes are denied and anonymous RPC execution is denied.
-- Vercel has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` variables configured for Production, Preview, and Development.
-- The multi-user UI and production guards are on branch `feat/kasira-multi-user-onboarding`; they are not yet promoted to the production branch.
-- A successful deployment status does not substitute for an end-to-end sign-up/sign-in/invitation test. The release candidate still requires CI/build verification and real-device acceptance.
+## Latest verification
 
-## Checklist before commercial publication
+The latest release-candidate workflow run should be used as the source of truth:
+https://github.com/komprisma-ui/KOMPRISMA-KASIR-V3/actions
 
-1. Complete CI/build verification for this release candidate, review the preview, and merge/deploy only after checks pass.
-2. Test the end-to-end flows with separate test accounts: owner creates business, email confirmation, wrong/expired/reused invitation, email mismatch, staff joins, role-limited access, and cross-business data isolation.
-3. In Supabase Auth settings, enable leaked-password protection and verify email confirmation, redirect URLs, rate limits, password recovery, and sender configuration.
-4. Run real-device acceptance tests: checkout and concurrent stock changes, offline queue and retry/idempotency, backup/restore, Bluetooth/USB/thermal printer sizes, barcode scanner, and Android WebView behavior.
-5. Set up a controlled Android release keystore and produce/verify a signed release APK/AAB. A successful web deployment does not mean a signed Android release artifact exists.
-6. Confirm the public production domain is reachable without deployment-team SSO gates, while application access remains protected by Supabase Auth and database RLS.
-7. Have the privacy, data retention, account-deletion, and commercial terms reviewed for the actual business operation. If QRIS/online payments are sold as a feature, integrate a live provider and test webhooks/refund/reconciliation; choosing a payment method in the UI is not a live gateway integration.
-8. Review database performance advisor findings before launch. The latest advisor reported 55 unindexed foreign keys across the shared database (many belong to VORA tables); assess ownership and query patterns and add targeted indexes without changing unrelated VORA schema blindly.
+The known-good deploy/smoke-test workflow for the base-path and post-deploy-checkout fix is:
+https://github.com/komprisma-ui/KOMPRISMA-KASIR-V3/actions/runs/39187355074
+
+Supabase project used by this branch: `clylvxgilwywwkxngmnv`. Migrations `kasira_021_multi_user_onboarding`, `kasira_022_invitation_deny_policy`, and `kasira_023_owner_member_admin` are recorded in the connected database. Read-only privilege checks confirmed the core onboarding and team RPCs reject anonymous execution.
+
+## Limitations / acceptance gates before selling
+
+Do not describe these as completed until tested and evidenced:
+
+1. **Multi-module cloud synchronization:** the POS checkout and product paths use cloud storage, but several secondary modules (purchases, cashbook, returns, accounting/journals, fixed assets, inventory registers, payroll and attendance) still use business-scoped local storage in the current UI. They do not yet provide reliable server sync/backup across devices. Sell these only as local/per-device features until a cloud-sync migration is implemented and tested.
+2. **Real customer acceptance:** run two independent businesses/accounts and verify email confirmation, owner setup, correct invite email, wrong/expired/reused tokens, role restrictions, member removal, tenant isolation and session restoration on a second device. Static asset smoke tests do not validate those interactive Auth flows end-to-end.
+3. **Supabase Auth settings:** confirm email sender and templates, site URL/redirect allow-list for each host, password-recovery callback handling, rate limits, and leaked-password protection in the actual project settings.
+4. **Offline and payment semantics:** verify duplicate retry/concurrent stock checkout and offline recovery. “QRIS”, card and transfer in the cashier UI identify payment methods; they are not a live payment processor, webhook, refund or settlement integration.
+5. **Hardware/Android:** test USB/Bluetooth/network printers, thermal 58/80 mm and A4 layouts, scanner behavior and WebView lifecycle on actual supported Android devices.
+6. **Android release artifact:** a web deployment is not an Android APK/AAB. A commercial Android build needs controlled signing credentials, signed artefact generation, install/upgrade tests and verification. Do not commit a private signing keystore to Git.
+7. **Legal/commercial release:** have privacy, data retention, account deletion, terms, support contact and customer-data handling reviewed for the actual business. Confirm the public production host does not have a deployment-team SSO gate.
+8. **Database operations:** review query performance and indexes for KASIRA's actual workload. Do not apply blanket changes to shared VORA tables without specific evidence/ownership review.
 
 ## Development
 
-This repository currently has no committed npm lockfile, so use `npm install` rather than `npm ci` until a lockfile is generated and committed.
+This repository does not currently commit a `package-lock.json`; therefore workflow uses `npm install`, not deterministic `npm ci`. Generate and commit a reviewed lockfile before stable commercial release.
 
 ```bash
 npm install
 npm run dev
+npm test
 ```
 
-Production verification:
+`npm test` executes:
+- `npm run test:offline`
+- `npm run check:production`
+- `npm run build`
+- `npm run check:dist`
 
-```bash
-npm run test
-```
-
-Android build:
-
-```bash
-npm run build:android
-```
-
-Before producing a signed release, verify the Android signing configuration and test the exact generated APK/AAB on supported devices.
+For Android, `npm run build:android` requires the Android project and build toolchain; verify the resulting APK/AAB and its signing before distribution.
