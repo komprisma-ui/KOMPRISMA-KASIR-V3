@@ -1,6 +1,6 @@
 # KASIRA — Professional POS & Business Management
 
-**Release candidate:** 0.5.3-rc  
+**Release candidate:** 0.5.3-rc.1  
 **Web test release:** https://komprisma-ui.github.io/KOMPRISMA-KASIR-V3/  
 **Production Vercel domain (unchanged):** https://kasira-seven.vercel.app
 
@@ -16,7 +16,7 @@ KASIRA is a responsive cashier and business-management application built with Re
 - Owner role changes and membership removal go through restricted database RPCs and audit logging. Anonymous execute privilege was read-only checked as denied for owner onboarding/invitation/member-management RPCs.
 - Database-level business membership checks and RLS; client-side menu hiding is only an interface convenience.
 - Cloud checkout path uses `create_sale_atomic` for server-validated pricing/HPP, idempotency and stock protection. Offline sales are queued with client request IDs and retried when online.
-- Product catalogue and outlet stock load from Supabase; product save path targets business-scoped tables. Customer and sales history are queried for the active business/outlet.
+- Product catalogue and outlet stock load from Supabase; product save/archive is business-scoped and role-guarded. Customer records, address, points and total spend persist in the database; points/spend are updated atomically by checkout. Purchases/receiving, stock adjustments, cash entries, returns/refunds and payroll payout now have tenant/role-checked database operations and loadback. Employee, attendance, fixed-asset and inventory UI paths now call business-scoped Supabase tables.
 - Per-business local cache namespace and a fail-closed loading screen protect the UI while cloud membership context is initialized.
 - Automated checks now run offline queue tests, production guards, Vite compilation, built-asset path checks, deploy the branch, and then request the published HTML/JavaScript/CSS to confirm the login UI and invite-RPC code are present/reachable.
 
@@ -28,13 +28,13 @@ https://github.com/komprisma-ui/KOMPRISMA-KASIR-V3/actions
 The known-good deploy/smoke-test workflow for the base-path and post-deploy-checkout fix is:
 https://github.com/komprisma-ui/KOMPRISMA-KASIR-V3/actions/runs/39187355074
 
-Supabase project used by this branch: `clylvxgilwywwkxngmnv`. Migrations `kasira_021_multi_user_onboarding`, `kasira_022_invitation_deny_policy`, and `kasira_023_owner_member_admin` are recorded in the connected database. Read-only privilege checks confirmed the core onboarding and team RPCs reject anonymous execution.
+Supabase project used by this branch: `clylvxgilwywwkxngmnv`. Migrations `kasira_021_multi_user_onboarding` through `kasira_027_payroll_payout_rpc` are recorded in the connected database. Read-only privilege checks confirmed the core onboarding and team RPCs reject anonymous execution.
 
 ## Limitations / acceptance gates before selling
 
 Do not describe these as completed until tested and evidenced:
 
-1. **Multi-module cloud synchronization:** the POS checkout and product paths use cloud storage, but several secondary modules (purchases, cashbook, returns, accounting/journals, fixed assets, inventory registers, payroll and attendance) still use business-scoped local storage in the current UI. They do not yet provide reliable server sync/backup across devices. Sell these only as local/per-device features until a cloud-sync migration is implemented and tested.
+1. **Multi-module cloud synchronization:** POS, products, customers, stock adjustments, purchases, cash entries, returns, payroll, employee records, attendance, fixed assets and inventory have cloud paths, but accounting/journals, expenses and receipt/settings content still have local components. A complete E2E test is still needed to prove all reads/writes, RLS and tenant isolation on real accounts before sale.
 2. **Real customer acceptance:** run two independent businesses/accounts and verify email confirmation, owner setup, correct invite email, wrong/expired/reused tokens, role restrictions, member removal, tenant isolation and session restoration on a second device. Static asset smoke tests do not validate those interactive Auth flows end-to-end.
 3. **Supabase Auth settings:** confirm email sender and templates, site URL/redirect allow-list for each host, password-recovery callback handling, rate limits, and leaked-password protection in the actual project settings.
 4. **Offline and payment semantics:** verify duplicate retry/concurrent stock checkout and offline recovery. “QRIS”, card and transfer in the cashier UI identify payment methods; they are not a live payment processor, webhook, refund or settlement integration.
