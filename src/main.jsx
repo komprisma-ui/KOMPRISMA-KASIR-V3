@@ -126,8 +126,12 @@ function App(){
      payment:paymentLabels[s.payment_method]||s.payment_method,paid:Number(s.paid_amount)||0,change:Number(s.change_amount)||0,customerId:s.customer_id||null,status:s.status||"paid",cloud:true,
      items:(s.sale_items||[]).map(i=>{const p=productMap.get(String(i.product_id));return{id:i.id,productId:i.product_id,name:p?.name||"Produk",sku:p?.sku||"",price:Number(i.unit_price)||0,cost:Number(i.unit_cost_at_sale)||0,qty:Number(i.quantity)||0,discount:Number(i.discount)||0,total:Number(i.total)||0}})
    }));
+   const {data:cloudReturns,error:returnReadError}=await supabase.from("sale_returns").select("id,sale_id,sale_item_id,qty,refund_amount,reason,created_at").eq("business_id",membership.business_id).order("created_at",{ascending:false}).limit(500);
+   if(returnReadError)throw returnReadError;
+   const mappedReturns=(cloudReturns||[]).map(r=>{const sale=mappedSales.find(x=>String(x.id)===String(r.sale_id));const item=sale?.items.find(x=>String(x.id)===String(r.sale_item_id));return{id:r.id,at:r.created_at,saleId:r.sale_id,saleNumber:sale?.number||"Transaksi sebelumnya",saleItemId:r.sale_item_id,product:item?.name||"Produk",qty:Number(r.qty)||0,amount:Number(r.refund_amount)||0,reason:r.reason||"",cloud:true}});
    setProducts(mapped);
    setCustomers((cloudCustomers||[]).map(x=>({...x,totalSpent:Number(x.total_spent)||0})));
+   setReturns(mappedReturns);
    setPurchases(mappedPurchases);
    setCash(mappedCash);
    if(!salesError){const pending=readOfflineQueue(membership.business_id).map(x=>({...x.sale,status:"pending_sync",cloud:false}));const pendingIds=new Set(pending.map(x=>x.clientRequestId));setSales([...pending,...mappedSales.filter(x=>!pendingIds.has(x.clientRequestId))]);}
