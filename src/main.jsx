@@ -229,28 +229,18 @@ function App(){
    }finally{checkoutLock.current=false}
  };
  const saveProductCloud=async draft=>{
-   const productPayload={sku:String(draft.sku||"").trim()||("SKU-"+Date.now()),barcode:String(draft.barcode||"").trim()||null,name:String(draft.name||"").trim(),category:String(draft.category||"Umum").trim()||"Umum",buy_price:Number(draft.cost)||0,sell_price:Number(draft.price)||0,min_stock:Number(draft.minStock)||0,active:true};
-   if(!productPayload.name||!Number.isFinite(productPayload.sell_price)||productPayload.sell_price<0)throw new Error("Nama dan harga jual produk tidak valid.");
-   if(isDemoMode())return {...draft,id:draft.id||("demo-product-"+uid()),sku:productPayload.sku,barcode:productPayload.barcode||"",name:productPayload.name,category:productPayload.category,cost:productPayload.buy_price,price:productPayload.sell_price,minStock:productPayload.min_stock,stock:Number(draft.stock)||0,unit:draft.unit||"pcs",active:true};
-   if(cloud.ready&&supabase&&cloud.businessId&&cloud.outletId){
-     let productId=draft.id;
-     if(draft._isNew){
-       const {data,error}=await supabase.from("products").insert({...productPayload,business_id:cloud.businessId}).select("id").single();
-       if(error)throw error;
-       productId=data.id;
-       const {error:stockError}=await supabase.from("product_stocks").insert({product_id:productId,outlet_id:cloud.outletId,quantity:Number(draft.stock)||0});
-       if(stockError){await supabase.from("products").delete().eq("id",productId).eq("business_id",cloud.businessId);throw stockError;}
-     }else{
-       const {error}=await supabase.from("products").update(productPayload).eq("id",productId).eq("business_id",cloud.businessId);
-       if(error)throw error;
-       const {data:existing,error:stockReadError}=await supabase.from("product_stocks").select("id").eq("product_id",productId).eq("outlet_id",cloud.outletId).maybeSingle();
-       if(stockReadError)throw stockReadError;
-       if(existing){const {error:stockUpdateError}=await supabase.from("product_stocks").update({quantity:Number(draft.stock)||0}).eq("id",existing.id);if(stockUpdateError)throw stockUpdateError;}
-       else {const {error:stockInsertError}=await supabase.from("product_stocks").insert({product_id:productId,outlet_id:cloud.outletId,quantity:Number(draft.stock)||0});if(stockInsertError)throw stockInsertError;}
-     }
-     return {...draft,id:productId,sku:productPayload.sku,barcode:productPayload.barcode||"",name:productPayload.name,category:productPayload.category,cost:productPayload.buy_price,price:productPayload.sell_price,minStock:productPayload.min_stock,stock:Number(draft.stock)||0,unit:draft.unit||"pcs",active:true};
-   }
-   throw new Error("Koneksi cloud KASIRA belum siap. Pastikan Anda sudah login, terdaftar sebagai anggota toko, dan outlet berhasil dimuat. Produk tidak disimpan secara lokal agar tidak hilang saat halaman dimuat ulang.");
+   const productPayload={sku:String(draft.sku||"").trim()||("SKU-"+Date.now()),barcode:String(draft.barcode||"").trim()||null,name:String(draft.name||"").trim(),category:String(draft.category||"Umum").trim()||"Umum",buy_price:Number(draft.cost)||0,sell_price:Number(draft.price)||0,min_stock:Number(draft.minStock)||0};
+   if(productPayload.name.length<2)throw new Error("Nama produk minimal 2 karakter.");
+   if(!Number.isFinite(productPayload.buy_price)||productPayload.buy_price<0||!Number.isFinite(productPayload.sell_price)||productPayload.sell_price<0||!Number.isInteger(productPayload.min_stock)||productPayload.min_stock<0)throw new Error("Harga dan stok minimum produk tidak valid.");
+   const stock=Number(draft.stock)||0;
+   if(!Number.isFinite(stock)||stock<0)throw new Error("Stok produk tidak valid.");
+   if(isDemoMode())return {...draft,id:draft.id||("demo-product-"+uid()),sku:productPayload.sku,barcode:productPayload.barcode||"",name:productPayload.name,category:productPayload.category,cost:productPayload.buy_price,price:productPayload.sell_price,minStock:productPayload.min_stock,stock,unit:draft.unit||"pcs",active:true};
+   if(!cloud.ready||!supabase||!cloud.businessId||!cloud.outletId)throw new Error("Koneksi cloud KASIRA belum siap. Pastikan Anda sudah login dan outlet berhasil dimuat.");
+   const{data,error}=await supabase.rpc("kasira_save_product",{payload:{...productPayload,business_id:cloud.businessId,outlet_id:cloud.outletId,product_id:draft._isNew?null:draft.id,stock}});
+   if(error)throw error;
+   const row=Array.isArray(data)?data[0]:data;
+   if(!row?.id)throw new Error("Server tidak mengembalikan ID produk.");
+   return {...draft,id:row.id,sku:row.sku,barcode:row.barcode||"",name:row.name,category:row.category,cost:Number(row.buy_price)||0,price:Number(row.sell_price)||0,minStock:Number(row.min_stock)||0,stock:Number(row.stock)||0,unit:draft.unit||"pcs",active:row.active!==false};
  };
  const saveCustomerCloud=async draft=>{
    const customerPayload={name:String(draft.name||"").trim(),phone:String(draft.phone||"").trim()||null,email:String(draft.email||"").trim().toLowerCase()||null,address:String(draft.address||"").trim()||null};
