@@ -12,6 +12,7 @@ const required=[
   "supabase/migrations/20261007_kasira_011_rls_bypass_hardening.sql",
   "supabase/migrations/20261019_kasira_021_multi_user_onboarding.sql",
   "supabase/migrations/20261019_kasira_022_invitation_deny_policy.sql",
+  "supabase/migrations/20261019_kasira_023_owner_member_admin.sql",
   "public/privacy-policy.html","public/delete-account.html"
 ];
 for(const file of required) if(!fs.existsSync(file)) throw new Error("Missing required file: "+file);
@@ -33,7 +34,7 @@ for(const file of ["public/privacy-policy.html","public/delete-account.html"]){
 }
 
 const main=fs.readFileSync("src/main.jsx","utf8");
-for(const marker of ["client_request_id","unit_cost_at_sale","cloudSales","create_sale_atomic"])
+for(const marker of ["client_request_id","unit_cost_at_sale","cloudSales","create_sale_atomic","kasira_create_invitation","kasira_accept_invitation","kasira_complete_owner_signup","PENDING_ONBOARDING_KEY"])
   if(!main.includes(marker)) throw new Error("Production checkout safeguard missing: "+marker);
 
 const authSource=fs.readFileSync("src/auth-overlay.jsx","utf8");
@@ -65,5 +66,12 @@ for(const marker of ["for all","to anon, authenticated","using (false)","with ch
 const migration=fs.readFileSync("supabase/migrations/20261007_kasira_011_rls_bypass_hardening.sql","utf8");
 for(const forbidden of ["drop policy if exists product_member_all","drop policy if exists stock_member_all","drop policy if exists sale_member_all","drop policy if exists sale_item_member_all"])
   if(!migration.includes(forbidden)) throw new Error("RLS bypass hardening missing: "+forbidden);
+
+const memberAdmin=fs.readFileSync("supabase/migrations/20261019_kasira_023_owner_member_admin.sql","utf8");
+for(const marker of ["kasira_set_member_role","kasira_remove_member","v_actor_role is distinct from 'owner'","revoke all on function public.kasira_set_member_role"])
+  if(!memberAdmin.includes(marker)) throw new Error("Member administration permission guard missing: "+marker);
+
+if(main.includes('functions.invoke("kasira-invite-user"'))
+  throw new Error("Unsafe/undeclared direct account-creation endpoint remains in the primary app.");
 
 console.log("KASIRA production checks passed.");
