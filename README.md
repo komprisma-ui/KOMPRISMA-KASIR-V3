@@ -16,7 +16,7 @@ KASIRA is a responsive cashier and business-management application built with Re
 - Owner role changes and membership removal go through restricted database RPCs and audit logging. Anonymous execute privilege was read-only checked as denied for owner onboarding/invitation/member-management RPCs.
 - Database-level business membership checks and RLS; client-side menu hiding is only an interface convenience.
 - Cloud checkout path uses `create_sale_atomic` for server-validated pricing/HPP, idempotency and stock protection. Offline sales are queued with client request IDs and retried when online.
-- Product catalogue and outlet stock load from Supabase; product save/archive is business-scoped and role-guarded. Customer records, address, points and total spend persist in the database; points/spend are updated atomically by checkout. Purchases/receiving, stock adjustments, cash entries, returns/refunds and payroll payout now have tenant/role-checked database operations and loadback. Employee, attendance, fixed-asset and inventory UI paths now call business-scoped Supabase tables.
+- Product catalogue and outlet stock load from Supabase; product save/archive is business-scoped and role-guarded; initial stock and product changes are written atomically. Customer records, address, points and total spend persist in the database; points/spend are updated atomically by checkout. Purchases/receiving, stock adjustments, cash entries, returns/refunds and payroll payout now have tenant/role-checked database operations and loadback. Employee, attendance, fixed-asset and inventory UI paths now call business-scoped Supabase tables.
 - Per-business local cache namespace and a fail-closed loading screen protect the UI while cloud membership context is initialized.
 - Automated checks now run offline queue tests, production guards, Vite compilation, built-asset path checks, deploy the branch, and then request the published HTML/JavaScript/CSS to confirm the login UI and invite-RPC code are present/reachable.
 
@@ -28,7 +28,7 @@ https://github.com/komprisma-ui/KOMPRISMA-KASIR-V3/actions
 The known-good deploy/smoke-test workflow for the base-path and post-deploy-checkout fix is:
 https://github.com/komprisma-ui/KOMPRISMA-KASIR-V3/actions/runs/39187355074
 
-Supabase project used by this branch: `clylvxgilwywwkxngmnv`. Migrations `kasira_021_multi_user_onboarding` through `kasira_029_stock_concurrency_lock` are recorded in the connected database. Read-only privilege checks confirmed the core onboarding and team RPCs reject anonymous execution.
+Supabase project used by this branch: `clylvxgilwywwkxngmnv`. Migrations `kasira_021_multi_user_onboarding` through `kasira_030_product_stock_rpc` are recorded in the connected database. Read-only privilege checks confirmed the core onboarding and team RPCs reject anonymous execution.
 
 ## Limitations / acceptance gates before selling
 
