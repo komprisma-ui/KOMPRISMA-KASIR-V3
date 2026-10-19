@@ -129,11 +129,41 @@ function App(){
    const {data:cloudReturns,error:returnReadError}=await supabase.from("sale_returns").select("id,sale_id,sale_item_id,qty,refund_amount,reason,created_at").eq("business_id",membership.business_id).order("created_at",{ascending:false}).limit(500);
    if(returnReadError)throw returnReadError;
    const mappedReturns=(cloudReturns||[]).map(r=>{const sale=mappedSales.find(x=>String(x.id)===String(r.sale_id));const item=sale?.items.find(x=>String(x.id)===String(r.sale_item_id));return{id:r.id,at:r.created_at,saleId:r.sale_id,saleNumber:sale?.number||"Transaksi sebelumnya",saleItemId:r.sale_item_id,product:item?.name||"Produk",qty:Number(r.qty)||0,amount:Number(r.refund_amount)||0,reason:r.reason||"",cloud:true}});
+   let mappedEmployees=[],mappedAssets=[],mappedInventories=[],mappedAttendance=[],mappedPayroll=[];
+   if(["owner","manager","employee"].includes(membership.role)){
+     const {data:employeeRows,error:employeeReadError}=await supabase.from("employees").select("id,employee_no,name,position,phone,join_date,base_salary,status,user_id").eq("business_id",membership.business_id).order("name");
+     if(employeeReadError)throw employeeReadError;
+     mappedEmployees=(employeeRows||[]).map(e=>({id:e.id,employeeNo:e.employee_no||"",name:e.name,position:e.position||"Karyawan",phone:e.phone||"",joinDate:e.join_date||"",salary:Number(e.base_salary)||0,status:e.status==="active"?"Aktif":"Nonaktif",userId:e.user_id||null}));
+   }
+   if(["owner","manager"].includes(membership.role)){
+     const {data:assetRows,error:assetReadError}=await supabase.from("fixed_assets").select("id,name,category,acquisition_date,acquisition_cost,useful_life_months,residual_value,status").eq("business_id",membership.business_id).order("created_at",{ascending:false}).limit(500);
+     if(assetReadError)throw assetReadError;
+     mappedAssets=(assetRows||[]).map(a=>({id:a.id,name:a.name,category:a.category,acquiredAt:a.acquisition_date,value:Number(a.acquisition_cost)||0,usefulLife:Math.max(1,Math.round(Number(a.useful_life_months||60)/12)),status:a.status==="active"?"Aktif":a.status}));
+     const {data:payrollRows,error:payrollReadError}=await supabase.from("payroll").select("id,employee_id,period_start,period_end,gross_salary,deductions,net_salary,status,created_at").eq("business_id",membership.business_id).order("created_at",{ascending:false}).limit(500);
+     if(payrollReadError)throw payrollReadError;
+     mappedPayroll=(payrollRows||[]).map(p=>({id:p.id,employeeId:p.employee_id,employee:mappedEmployees.find(e=>String(e.id)===String(p.employee_id))?.name||"Karyawan",date:p.created_at,periodStart:p.period_start,periodEnd:p.period_end,gross:Number(p.gross_salary)||0,deductions:Number(p.deductions)||0,net:Number(p.net_salary)||0,status:p.status==="paid"?"Dibayar":p.status}));
+   }
+   if(["owner","manager","warehouse"].includes(membership.role)){
+     const {data:inventoryRows,error:inventoryReadError}=await supabase.from("inventory_register").select("id,name,asset_tag,category,quantity,location,condition,created_at").eq("business_id",membership.business_id).eq("outlet_id",outlet.id).order("created_at",{ascending:false}).limit(500);
+     if(inventoryReadError)throw inventoryReadError;
+     mappedInventories=(inventoryRows||[]).map(i=>({id:i.id,name:i.name,assetTag:i.asset_tag||"",category:i.category||"Perlengkapan",qty:Number(i.quantity)||1,location:i.location||"Toko",condition:i.condition==="good"?"Baik":i.condition||"—"}));
+   }
+   if(["owner","manager","cashier","employee"].includes(membership.role)){
+     const {data:attendanceRows,error:attendanceReadError}=await supabase.from("attendance").select("id,employee_id,attendance_date,status,created_at,check_in,check_out").eq("business_id",membership.business_id).order("attendance_date",{ascending:false}).limit(1000);
+     if(attendanceReadError)throw attendanceReadError;
+     const statuses={present:"Hadir",leave:"Izin",sick:"Sakit",absent:"Alpa"};
+     mappedAttendance=(attendanceRows||[]).map(a=>({id:a.id,employeeId:a.employee_id,employee:mappedEmployees.find(e=>String(e.id)===String(a.employee_id))?.name||"",date:a.attendance_date,status:statuses[a.status]||a.status,time:a.check_in||a.created_at,checkOut:a.check_out||null,cloud:true}));
+   }
    setProducts(mapped);
    setCustomers((cloudCustomers||[]).map(x=>({...x,totalSpent:Number(x.total_spent)||0})));
    setReturns(mappedReturns);
    setPurchases(mappedPurchases);
    setCash(mappedCash);
+   setEmployees(mappedEmployees);
+   setAssets(mappedAssets);
+   setInventories(mappedInventories);
+   setAttendance(mappedAttendance);
+   setPayroll(mappedPayroll);
    if(!salesError){const pending=readOfflineQueue(membership.business_id).map(x=>({...x.sale,status:"pending_sync",cloud:false}));const pendingIds=new Set(pending.map(x=>x.clientRequestId));setSales([...pending,...mappedSales.filter(x=>!pendingIds.has(x.clientRequestId))]);}
    const cloudContext={ready:true,businessId:membership.business_id,outletId:outlet.id,userId:session.user.id,role:membership.role};save("kasira_cloud_context",cloudContext);setCloud(cloudContext);
  })().catch(async error=>{if(!alive)return;console.error("KASIRA session initialization failed:",error);setCloud({ready:false,businessId:null,outletId:null,userId:null,role:null});setAuthMessage(error?.message||"Persiapan akun gagal. Silakan masuk kembali.");try{await supabase?.auth.signOut()}catch{}setAuthUser(null);setAuthChecked(true)});return()=>{alive=false}},[]);
