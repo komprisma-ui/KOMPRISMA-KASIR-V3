@@ -92,7 +92,7 @@ function App(){
    const {membership,error}=await getMembership(session.user.id);
    if(error||!membership){console.error("KASIRA membership unavailable:",error||"Membership tidak ditemukan.");setCloud({ready:false,businessId:null,outletId:null,userId:null,role:null});setAuthMessage(error?.message||"Akun belum terhubung ke usaha. Masuk kembali dengan kode undangan yang valid atau buat owner pertama.");try{await supabase.auth.signOut()}catch{}setAuthUser(null);return;}
    const {outlet}=await getActiveOutlet(membership.business_id);
-   if(!outlet)return;
+   if(!outlet)throw new Error("Outlet utama untuk usaha ini belum tersedia. Hubungi dukungan KASIRA.");
    const {data:rows,error:productsError}=await supabase
      .from("products")
      .select("id,business_id,sku,barcode,name,category,buy_price,sell_price,min_stock,active,product_stocks!inner(outlet_id,quantity)")
@@ -100,15 +100,15 @@ function App(){
      .eq("active",true)
      .eq("product_stocks.outlet_id",outlet.id)
      .order("name");
-   if(productsError) { console.error("KASIRA cloud products:",productsError); return; }
+   if(productsError) throw productsError;
    const mapped=(rows||[]).map(p=>({
      id:p.id,name:p.name,sku:p.sku,barcode:p.barcode||"",category:p.category||"Umum",
      price:Number(p.sell_price)||0,cost:Number(p.buy_price)||0,
      stock:Number(p.product_stocks?.[0]?.quantity||0),minStock:Number(p.min_stock)||0,unit:"pcs"
    }));
-   const {data:cloudCustomers}=await supabase.from("customers").select("id,name,phone,email,points").eq("business_id",membership.business_id).order("name");
+   const {data:cloudCustomers,error:customersError}=await supabase.from("customers").select("id,name,phone,email,points").eq("business_id",membership.business_id).order("name");if(customersError)throw customersError;
    const {data:cloudSales,error:salesError}=await supabase.from("sales").select("id,invoice_no,created_at,subtotal,discount,tax,total,payment_method,paid_amount,change_amount,customer_id,status,sale_items(id,product_id,quantity,unit_price,unit_cost_at_sale,discount,total)").eq("business_id",membership.business_id).eq("outlet_id",outlet.id).order("created_at",{ascending:false}).limit(500);
-   if(salesError) console.error("KASIRA cloud sales:",salesError);
+   if(salesError) throw salesError;
    const paymentLabels={cash:"Tunai",card:"Kartu",qris:"QRIS",transfer:"Transfer"};
    const productMap=new Map(mapped.map(x=>[String(x.id),x]));
    const mappedSales=(cloudSales||[]).map(s=>({
@@ -127,7 +127,7 @@ function App(){
  const scanBuffer=useRef(""),scanTimer=useRef(null);
  useEffect(()=>{const onKey=e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();document.getElementById("kasira-pos-search")?.focus();return}const t=e.target;if(t&&["INPUT","TEXTAREA","SELECT"].includes(t.tagName))return;if(e.key==="Enter"){const code=scanBuffer.current.trim();scanBuffer.current="";if(code){const p=products.find(x=>String(x.barcode||"")===code||String(x.sku||"").toLowerCase()===code.toLowerCase());if(p)add(p);else alert("Barcode/SKU tidak ditemukan: "+code);}return}if(e.key.length===1){scanBuffer.current+=e.key;clearTimeout(scanTimer.current);scanTimer.current=setTimeout(()=>{scanBuffer.current=""},350)}};window.addEventListener("keydown",onKey);return()=>{window.removeEventListener("keydown",onKey);clearTimeout(scanTimer.current)}},[products]);
  const cats=["Semua",...new Set(products.filter(p=>p.active!==false).map(p=>p.category).filter(Boolean))],filtered=useMemo(()=>products.filter(p=>p.active!==false&&(cat==="Semua"||p.category===cat)&&(p.name.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase())||String(p.barcode||"").includes(q))),[products,q,cat]),low=products.filter(p=>p.active!==false&&p.stock<=p.minStock),today=sales.filter(s=>new Date(s.at).toDateString()===new Date().toDateString()),omzet=today.reduce((a,s)=>a+s.total,0),total=cart.reduce((a,i)=>a+i.price*i.qty,0);
- const demoActive=getDemoActiveUser();const currentRole=isDemoMode()?(demoActive?.role||"cashier"):cloud.role;const rolePages={owner:nav.map(([name])=>name),manager:["Dashboard","Kasir","Produk","Stok","Pembelian","Pelanggan","Transaksi","Laporan","Akuntansi","Aset","Inventaris","Karyawan","Absensi","Kas","Retur","Pengguna"],cashier:["Dashboard","Kasir","Pelanggan","Transaksi","Retur"],warehouse:["Dashboard","Produk","Stok","Pembelian","Inventaris"],employee:["Dashboard","Absensi"]};const allowedPages=currentRole?(rolePages[currentRole]||[]):(isDemoMode()?[]:nav.map(([name])=>name));const visibleNav=nav.filter(([name])=>allowedPages.includes(name));
+ const demoActive=getDemoActiveUser();const currentRole=isDemoMode()?(demoActive?.role||"cashier"):cloud.role;const rolePages={owner:nav.map(([name])=>name),manager:["Dashboard","Kasir","Produk","Stok","Pembelian","Pelanggan","Transaksi","Laporan","Akuntansi","Aset","Inventaris","Karyawan","Absensi","Kas","Retur","Pengguna"],cashier:["Dashboard","Kasir","Pelanggan","Transaksi","Retur"],warehouse:["Dashboard","Produk","Stok","Pembelian","Inventaris"],employee:["Dashboard","Absensi"]};const allowedPages=currentRole?(rolePages[currentRole]||[]):[];const visibleNav=nav.filter(([name])=>allowedPages.includes(name));
  const pendingSyncCount=cloud.businessId?readOfflineQueue(cloud.businessId).length:0;
  const add=p=>setCart(c=>{let x=c.find(i=>i.id===p.id);return x?c.map(i=>i.id===p.id?{...i,qty:Math.min(i.qty+1,p.stock)}:i):[...c,{...p,qty:1}]});
  const change=(id,d)=>setCart(c=>c.map(i=>{let p=products.find(x=>x.id===i.id);return i.id===id?{...i,qty:Math.max(0,Math.min(i.qty+d,p?.stock||999))}:i}).filter(i=>i.qty));
