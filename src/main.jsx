@@ -113,6 +113,12 @@ function App(){
    const {data:cloudCustomers,error:customersError}=await supabase.from("customers").select("id,name,phone,email,address,points,total_spent").eq("business_id",membership.business_id).order("name");if(customersError)throw customersError;
    const {data:cloudSales,error:salesError}=await supabase.from("sales").select("id,invoice_no,created_at,subtotal,discount,tax,total,payment_method,paid_amount,change_amount,customer_id,status,sale_items(id,product_id,quantity,unit_price,unit_cost_at_sale,discount,total)").eq("business_id",membership.business_id).eq("outlet_id",outlet.id).order("created_at",{ascending:false}).limit(500);
    if(salesError) throw salesError;
+   const {data:cloudPurchases,error:purchaseReadError}=await supabase.from("purchases").select("id,invoice_no,supplier_name,total,created_at,purchase_items(product_id,quantity,unit_cost,products(name))").eq("business_id",membership.business_id).eq("outlet_id",outlet.id).order("created_at",{ascending:false}).limit(500);
+   if(purchaseReadError)throw purchaseReadError;
+   const mappedPurchases=(cloudPurchases||[]).map(p=>{const item=(p.purchase_items||[])[0];return{id:p.id,at:p.created_at,invoice:p.invoice_no,supplier:p.supplier_name||"Umum",product:item?.products?.name||"Produk",productId:item?.product_id||null,qty:Number(item?.quantity)||0,cost:Number(item?.unit_cost)||0,total:Number(p.total)||0,payment:"Tunai",cloud:true}});
+   const {data:cloudCash,error:cashReadError}=await supabase.from("cash_transactions").select("id,type,amount,description,created_at").eq("business_id",membership.business_id).eq("outlet_id",outlet.id).order("created_at",{ascending:false}).limit(500);
+   if(cashReadError)throw cashReadError;
+   const mappedCash=(cloudCash||[]).map(x=>({id:x.id,at:x.created_at,type:x.type==="in"?"Masuk":"Keluar",amount:Number(x.amount)||0,note:x.description||"-",cloud:true}));
    const paymentLabels={cash:"Tunai",card:"Kartu",qris:"QRIS",transfer:"Transfer"};
    const productMap=new Map(mapped.map(x=>[String(x.id),x]));
    const mappedSales=(cloudSales||[]).map(s=>({
@@ -122,6 +128,8 @@ function App(){
    }));
    setProducts(mapped);
    setCustomers((cloudCustomers||[]).map(x=>({...x,totalSpent:Number(x.total_spent)||0})));
+   setPurchases(mappedPurchases);
+   setCash(mappedCash);
    if(!salesError){const pending=readOfflineQueue(membership.business_id).map(x=>({...x.sale,status:"pending_sync",cloud:false}));const pendingIds=new Set(pending.map(x=>x.clientRequestId));setSales([...pending,...mappedSales.filter(x=>!pendingIds.has(x.clientRequestId))]);}
    const cloudContext={ready:true,businessId:membership.business_id,outletId:outlet.id,userId:session.user.id,role:membership.role};save("kasira_cloud_context",cloudContext);setCloud(cloudContext);
  })().catch(async error=>{if(!alive)return;console.error("KASIRA session initialization failed:",error);setCloud({ready:false,businessId:null,outletId:null,userId:null,role:null});setAuthMessage(error?.message||"Persiapan akun gagal. Silakan masuk kembali.");try{await supabase?.auth.signOut()}catch{}setAuthUser(null);setAuthChecked(true)});return()=>{alive=false}},[]);
