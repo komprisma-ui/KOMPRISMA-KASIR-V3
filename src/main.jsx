@@ -231,6 +231,7 @@ function App(){
  const saveProductCloud=async draft=>{
    const productPayload={sku:String(draft.sku||"").trim()||("SKU-"+Date.now()),barcode:String(draft.barcode||"").trim()||null,name:String(draft.name||"").trim(),category:String(draft.category||"Umum").trim()||"Umum",buy_price:Number(draft.cost)||0,sell_price:Number(draft.price)||0,min_stock:Number(draft.minStock)||0,active:true};
    if(!productPayload.name||!Number.isFinite(productPayload.sell_price)||productPayload.sell_price<0)throw new Error("Nama dan harga jual produk tidak valid.");
+   if(isDemoMode())return {...draft,id:draft.id||("demo-product-"+uid()),sku:productPayload.sku,barcode:productPayload.barcode||"",name:productPayload.name,category:productPayload.category,cost:productPayload.buy_price,price:productPayload.sell_price,minStock:productPayload.min_stock,stock:Number(draft.stock)||0,unit:draft.unit||"pcs",active:true};
    if(cloud.ready&&supabase&&cloud.businessId&&cloud.outletId){
      let productId=draft.id;
      if(draft._isNew){
