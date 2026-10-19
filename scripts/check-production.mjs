@@ -19,7 +19,7 @@ for(const file of required) if(!fs.existsSync(file)) throw new Error("Missing re
 
 const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
 if(!pkg.dependencies["@supabase/supabase-js"]) throw new Error("Supabase SDK is not configured.");
-if(!/^0\.5\.[0-9]+$/.test(pkg.version)) throw new Error("Unexpected KASIRA version: "+pkg.version);
+if(!/^0\.5\.[0-9]+(?:-rc\.[0-9]+)?$/.test(pkg.version)) throw new Error("Unexpected KASIRA version: "+pkg.version);
 
 const auth=fs.readFileSync("src/auth-overlay.jsx","utf8");
 for(const secret of ["owner123","pengguna123","kasir123","karyawan123"])
