@@ -59,7 +59,9 @@ create table if not exists public.customers (
   name text not null,
   phone text,
   email text,
-  points integer not null default 0,
+  address text,
+  points integer not null default 0 check (points >= 0),
+  total_spent numeric(14,2) not null default 0 check (total_spent >= 0),
   created_at timestamptz not null default now()
 );
 
