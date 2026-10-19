@@ -34,7 +34,7 @@ for(const file of ["public/privacy-policy.html","public/delete-account.html"]){
 }
 
 const main=fs.readFileSync("src/main.jsx","utf8");
-for(const marker of ["client_request_id","unit_cost_at_sale","cloudSales","create_sale_atomic","kasira_create_invitation","kasira_accept_invitation","kasira_complete_owner_signup","PENDING_ONBOARDING_KEY"])
+for(const marker of ["client_request_id","unit_cost_at_sale","cloudSales","create_sale_atomic","kasira_create_invitation","kasira_accept_invitation","kasira_complete_owner_signup","PENDING_ONBOARDING_KEY","ACCOUNT RECOVERY","PASSWORD_RECOVERY","submitRecoveryPassword","persistLocal","ACTIVE_BUSINESS_SCOPE_KEY"])
   if(!main.includes(marker)) throw new Error("Production checkout safeguard missing: "+marker);
 
 const authSource=fs.readFileSync("src/auth-overlay.jsx","utf8");
