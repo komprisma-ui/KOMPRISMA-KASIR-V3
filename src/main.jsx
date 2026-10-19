@@ -237,6 +237,52 @@ function App(){
    if(error)throw error;
    return true;
  };
+ const saveEmployeeCloud=async draft=>{
+   if(!cloud.ready||!supabase||!cloud.businessId||!cloud.outletId)throw new Error("Sesi bisnis cloud belum siap.");
+   if(!["owner","manager"].includes(cloud.role))throw new Error("Hanya Owner atau Manager yang dapat menambah karyawan.");
+   const name=String(draft.name||"").trim(),salary=Number(draft.salary)||0;
+   if(name.length<2||!Number.isFinite(salary)||salary<0)throw new Error("Nama dan gaji pokok karyawan tidak valid.");
+   const{data,error}=await supabase.from("employees").insert({business_id:cloud.businessId,outlet_id:cloud.outletId,employee_no:"EMP-"+Date.now().toString(36).toUpperCase(),name,position:String(draft.position||"Karyawan").trim().slice(0,120),phone:String(draft.phone||"").trim().slice(0,80)||null,join_date:draft.joinDate||new Date().toISOString().slice(0,10),base_salary:salary,status:"active"}).select("id,employee_no,name,position,phone,join_date,base_salary,status").single();
+   if(error)throw error;
+   return{id:data.id,employeeNo:data.employee_no,name:data.name,position:data.position||"Karyawan",phone:data.phone||"",joinDate:data.join_date||"",salary:Number(data.base_salary)||0,status:data.status==="active"?"Aktif":"Nonaktif"};
+ };
+ const saveAssetCloud=async draft=>{
+   if(!cloud.ready||!supabase||!cloud.businessId||!cloud.outletId)throw new Error("Sesi bisnis cloud belum siap.");
+   if(!["owner","manager"].includes(cloud.role))throw new Error("Hanya Owner atau Manager yang dapat mengelola aset tetap.");
+   const name=String(draft.name||"").trim(),value=Number(draft.value)||0,years=Number(draft.usefulLife)||5;
+   if(name.length<2||value<=0||!Number.isFinite(value)||years<1||!Number.isFinite(years))throw new Error("Data aset tidak valid.");
+   const{data,error}=await supabase.from("fixed_assets").insert({business_id:cloud.businessId,outlet_id:cloud.outletId,name,category:String(draft.category||"Peralatan").trim().slice(0,100),acquisition_date:draft.acquiredAt||new Date().toISOString().slice(0,10),acquisition_cost:value,useful_life_months:Math.round(years*12),residual_value:0,status:"active"}).select("id,name,category,acquisition_date,acquisition_cost,useful_life_months,residual_value,status").single();
+   if(error)throw error;
+   return{id:data.id,name:data.name,category:data.category,acquiredAt:data.acquisition_date,value:Number(data.acquisition_cost)||0,usefulLife:Math.max(1,Math.round(Number(data.useful_life_months)/12)),status:data.status==="active"?"Aktif":data.status};
+ };
+ const saveInventoryCloud=async draft=>{
+   if(!cloud.ready||!supabase||!cloud.businessId||!cloud.outletId)throw new Error("Sesi bisnis cloud belum siap.");
+   if(!["owner","manager","warehouse"].includes(cloud.role))throw new Error("Peran Anda tidak dapat mengelola register inventaris.");
+   const name=String(draft.name||"").trim(),qty=Number(draft.qty);
+   if(name.length<2||!Number.isFinite(qty)||qty<1)throw new Error("Nama dan jumlah inventaris tidak valid.");
+   const{data,error}=await supabase.from("inventory_register").insert({business_id:cloud.businessId,outlet_id:cloud.outletId,name,asset_tag:String(draft.assetTag||"").trim().slice(0,100)||null,category:String(draft.category||"Perlengkapan").trim().slice(0,100),quantity:qty,location:String(draft.location||"Toko").trim().slice(0,150),condition:"good"}).select("id,name,category,quantity,location,condition,asset_tag,created_at").single();
+   if(error)throw error;
+   return{id:data.id,name:data.name,category:data.category||"Perlengkapan",qty:Number(data.quantity)||1,location:data.location||"Toko",condition:data.condition==="good"?"Baik":data.condition,assetTag:data.asset_tag||""};
+ };
+ const saveAttendanceCloud=async({employeeId,employee,date,status})=>{
+   if(!cloud.ready||!supabase||!cloud.businessId)throw new Error("Sesi bisnis cloud belum siap.");
+   const statusMap={"Hadir":"present","Izin":"leave","Sakit":"sick","Alpa":"absent","present":"present","leave":"leave","sick":"sick","absent":"absent"};
+   const databaseStatus=statusMap[status];if(!databaseStatus)throw new Error("Status absensi tidak valid.");
+   const{data,error}=await supabase.from("attendance").upsert({business_id:cloud.businessId,employee_id:employeeId,attendance_date:date,status:databaseStatus},{onConflict:"employee_id,attendance_date"}).select("id,employee_id,attendance_date,status,created_at,check_in,check_out").single();
+   if(error)throw error;
+   const label={"present":"Hadir","leave":"Izin","sick":"Sakit","absent":"Alpa"}[data.status]||status;
+   return{id:data.id,employeeId:data.employee_id,employee:employee||"",date:data.attendance_date,status:label,time:data.check_in||data.created_at||new Date().toISOString(),cloud:true};
+ };
+ const savePayrollCloud=async({employeeId,amount})=>{
+   if(!cloud.ready||!supabase||!cloud.businessId||!cloud.outletId)throw new Error("Sesi bisnis cloud belum siap.");
+   if(!["owner","manager"].includes(cloud.role))throw new Error("Hanya Owner atau Manager yang dapat membayar gaji.");
+   const now=new Date(),datePart=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+   const periodStart=datePart(new Date(now.getFullYear(),now.getMonth(),1)),periodEnd=datePart(new Date(now.getFullYear(),now.getMonth()+1,0));
+   const{data,error}=await supabase.rpc("kasira_payroll_payout",{payload:{business_id:cloud.businessId,outlet_id:cloud.outletId,employee_id:employeeId,period_start:periodStart,period_end:periodEnd,amount:Number(amount)}});
+   if(error)throw error;
+   if(!data?.payroll_id||!data?.cash_transaction_id)throw new Error("Server tidak mengembalikan referensi payroll dan kas.");
+   return{id:data.payroll_id,cashId:data.cash_transaction_id,employeeId:data.employee_id,employee:data.employee_name,date:data.created_at||new Date().toISOString(),gross:Number(data.gross_salary)||Number(amount),deductions:Number(data.deductions)||0,net:Number(data.net_salary)||Number(amount),status:data.status||"Dibayar",periodStart:data.period_start,periodEnd:data.period_end};
+ };
  const archiveProductCloud=async product=>{
    if(isDemoMode())return true;
    if(!cloud.ready||!supabase||!cloud.businessId)throw new Error("Sesi bisnis cloud belum siap.");
