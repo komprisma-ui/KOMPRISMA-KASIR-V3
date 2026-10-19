@@ -57,6 +57,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Checkout source for post-deploy smoke test
+        uses: actions/checkout@v4
       - name: Publish to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
