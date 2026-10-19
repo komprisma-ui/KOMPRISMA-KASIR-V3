@@ -60,3 +60,7 @@ jobs:
       - name: Publish to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Smoke-test published login and asset URLs
+        env:
+          KASIRA_DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/check-deployed-site.mjs
