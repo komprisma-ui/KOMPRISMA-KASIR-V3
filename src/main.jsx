@@ -94,6 +94,8 @@ function App(){
    if(error||!membership){console.error("KASIRA membership unavailable:",error||"Membership tidak ditemukan.");setCloud({ready:false,businessId:null,outletId:null,userId:null,role:null});setAuthMessage(error?.message||"Akun belum terhubung ke usaha. Masuk kembali dengan kode undangan yang valid atau buat owner pertama.");try{await supabase.auth.signOut()}catch{}setAuthUser(null);return;}
    const {outlet}=await getActiveOutlet(membership.business_id);
    if(!outlet)throw new Error("Outlet utama untuk usaha ini belum tersedia. Hubungi dukungan KASIRA.");
+   const previousBusinessScope=localStorage.getItem(ACTIVE_BUSINESS_SCOPE_KEY);
+   if(previousBusinessScope!==membership.business_id){localStorage.setItem(ACTIVE_BUSINESS_SCOPE_KEY,membership.business_id);window.location.reload();return;}
    const {data:rows,error:productsError}=await supabase
      .from("products")
      .select("id,business_id,sku,barcode,name,category,buy_price,sell_price,min_stock,active,product_stocks!inner(outlet_id,quantity)")
@@ -120,7 +122,7 @@ function App(){
    setProducts(mapped);
    setCustomers((cloudCustomers||[]).map(x=>({...x,totalSpent:0})));
    if(!salesError){const pending=readOfflineQueue(membership.business_id).map(x=>({...x.sale,status:"pending_sync",cloud:false}));const pendingIds=new Set(pending.map(x=>x.clientRequestId));setSales([...pending,...mappedSales.filter(x=>!pendingIds.has(x.clientRequestId))]);}
-   const previousBusinessScope=localStorage.getItem(ACTIVE_BUSINESS_SCOPE_KEY);if(previousBusinessScope!==membership.business_id){localStorage.setItem(ACTIVE_BUSINESS_SCOPE_KEY,membership.business_id);window.location.reload();return;}const cloudContext={ready:true,businessId:membership.business_id,outletId:outlet.id,userId:session.user.id,role:membership.role};save("kasira_cloud_context",cloudContext);setCloud(cloudContext);
+   const cloudContext={ready:true,businessId:membership.business_id,outletId:outlet.id,userId:session.user.id,role:membership.role};save("kasira_cloud_context",cloudContext);setCloud(cloudContext);
  })().catch(async error=>{if(!alive)return;console.error("KASIRA session initialization failed:",error);setCloud({ready:false,businessId:null,outletId:null,userId:null,role:null});setAuthMessage(error?.message||"Persiapan akun gagal. Silakan masuk kembali.");try{await supabase?.auth.signOut()}catch{}setAuthUser(null);setAuthChecked(true)});return()=>{alive=false}},[]);
  useEffect(()=>{const on=()=>setOnline(true),off=()=>setOnline(false);window.addEventListener("online",on);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off)}},[]);
  useEffect(()=>{if(!online||!cloud.ready||!supabase||!cloud.businessId)return;let cancelled=false;(async()=>{const queue=readOfflineQueue(cloud.businessId);for(const entry of queue){if(cancelled)break;try{const{data:saleId,error}=await supabase.rpc("create_sale_atomic",{payload:entry.payload});if(error){console.error("KASIRA offline sync deferred:",error.message);break;}removeOfflineSale(cloud.businessId,entry.clientRequestId);setSales(current=>current.map(s=>s.clientRequestId===entry.clientRequestId?{...s,id:saleId,status:"paid",cloud:true,syncedAt:new Date().toISOString()}:s));}catch(err){console.error("KASIRA offline sync failed:",err);break;}}})();return()=>{cancelled=true}},[online,cloud.ready,cloud.businessId]);
