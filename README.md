@@ -28,7 +28,7 @@ https://github.com/komprisma-ui/KOMPRISMA-KASIR-V3/actions
 The known-good deploy/smoke-test workflow for the base-path and post-deploy-checkout fix is:
 https://github.com/komprisma-ui/KOMPRISMA-KASIR-V3/actions/runs/39187355074
 
-Supabase project used by this branch: `clylvxgilwywwkxngmnv`. Migrations `kasira_021_multi_user_onboarding` through `kasira_027_payroll_payout_rpc` are recorded in the connected database. Read-only privilege checks confirmed the core onboarding and team RPCs reject anonymous execution.
+Supabase project used by this branch: `clylvxgilwywwkxngmnv`. Migrations `kasira_021_multi_user_onboarding` through `kasira_028_purchase_invoice_lock` are recorded in the connected database. Read-only privilege checks confirmed the core onboarding and team RPCs reject anonymous execution.
 
 ## Limitations / acceptance gates before selling
 
