@@ -14,6 +14,9 @@ const required=[
   "supabase/migrations/20261019_kasira_022_invitation_deny_policy.sql",
   "supabase/migrations/20261019_kasira_023_owner_member_admin.sql",
   "supabase/migrations/20261019_kasira_024_customer_loyalty_sync.sql",
+  "supabase/migrations/20261019_kasira_025_purchase_stock_rpc.sql",
+  "supabase/migrations/20261019_kasira_026_return_refund_rpc.sql",
+  "supabase/migrations/20261019_kasira_027_payroll_payout_rpc.sql",
   "public/privacy-policy.html","public/delete-account.html"
 ];
 for(const file of required) if(!fs.existsSync(file)) throw new Error("Missing required file: "+file);
@@ -35,7 +38,7 @@ for(const file of ["public/privacy-policy.html","public/delete-account.html"]){
 }
 
 const main=fs.readFileSync("src/main.jsx","utf8");
-for(const marker of ["client_request_id","unit_cost_at_sale","cloudSales","create_sale_atomic","kasira_create_invitation","kasira_accept_invitation","kasira_complete_owner_signup","PENDING_ONBOARDING_KEY","ACCOUNT RECOVERY","PASSWORD_RECOVERY","submitRecoveryPassword","persistLocal","ACTIVE_BUSINESS_SCOPE_KEY"])
+for(const marker of ["client_request_id","unit_cost_at_sale","cloudSales","create_sale_atomic","kasira_create_invitation","kasira_accept_invitation","kasira_complete_owner_signup","PENDING_ONBOARDING_KEY","ACCOUNT RECOVERY","PASSWORD_RECOVERY","submitRecoveryPassword","persistLocal","ACTIVE_BUSINESS_SCOPE_KEY","kasira_adjust_stock","kasira_create_purchase","kasira_create_sale_return","kasira_payroll_payout","saveEmployeeCloud","saveAssetCloud","saveInventoryCloud","saveAttendanceCloud","savePayrollCloud","setPayroll(mappedPayroll)","setAttendance(mappedAttendance)"])
   if(!main.includes(marker)) throw new Error("Production checkout safeguard missing: "+marker);
 
 const authSource=fs.readFileSync("src/auth-overlay.jsx","utf8");
