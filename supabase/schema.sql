@@ -110,6 +110,7 @@ create table if not exists public.purchases (
   business_id uuid not null references public.businesses(id) on delete cascade,
   outlet_id uuid not null references public.outlets(id),
   supplier_id uuid references public.suppliers(id),
+  supplier_name text,
   invoice_no text not null,
   total numeric(14,2) not null default 0,
   status text not null default 'received',
