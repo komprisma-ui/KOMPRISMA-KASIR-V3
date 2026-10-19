@@ -1,7 +1,7 @@
 {
   "name": "kasira-pos",
   "private": true,
-  "version": "0.5.2",
+  "version": "0.5.3-rc.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
