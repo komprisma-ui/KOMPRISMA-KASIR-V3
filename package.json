@@ -13,7 +13,8 @@
     "audit:syntax": "npm run build",
     "check:production": "node scripts/check-production.mjs",
     "test:offline": "node scripts/test-offline-sync.mjs",
-    "test": "npm run test:offline && npm run check:production && npm run build"
+    "test": "npm run test:offline && npm run check:production && npm run build && npm run check:dist",
+    "check:dist": "node scripts/check-built-assets.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "5.0.4",
