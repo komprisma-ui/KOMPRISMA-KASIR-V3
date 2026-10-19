@@ -13,6 +13,7 @@ const required=[
   "supabase/migrations/20261019_kasira_021_multi_user_onboarding.sql",
   "supabase/migrations/20261019_kasira_022_invitation_deny_policy.sql",
   "supabase/migrations/20261019_kasira_023_owner_member_admin.sql",
+  "supabase/migrations/20261019_kasira_024_customer_loyalty_sync.sql",
   "public/privacy-policy.html","public/delete-account.html"
 ];
 for(const file of required) if(!fs.existsSync(file)) throw new Error("Missing required file: "+file);
@@ -68,6 +69,12 @@ for(const forbidden of ["drop policy if exists product_member_all","drop policy 
   if(!migration.includes(forbidden)) throw new Error("RLS bypass hardening missing: "+forbidden);
 
 const memberAdmin=fs.readFileSync("supabase/migrations/20261019_kasira_023_owner_member_admin.sql","utf8");
+const customerMigration=fs.readFileSync("supabase/migrations/20261019_kasira_024_customer_loyalty_sync.sql","utf8");
+for(const marker of ["add column if not exists address","add column if not exists total_spent","total_spent = total_spent + v_total","floor(v_total / 10000)"])
+  if(!customerMigration.includes(marker)) throw new Error("Customer/loyalty cloud persistence safeguard missing: "+marker);
+for(const marker of ['from("customers").insert','from("customers").delete','total_spent','address'])
+  if(!main.includes(marker)) throw new Error("Cloud customer workflow is incomplete: "+marker);
+
 for(const marker of ["kasira_set_member_role","kasira_remove_member","v_actor_role is distinct from 'owner'","revoke all on function public.kasira_set_member_role"])
   if(!memberAdmin.includes(marker)) throw new Error("Member administration permission guard missing: "+marker);
 
