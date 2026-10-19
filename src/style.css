@@ -83,4 +83,11 @@ html[data-theme="dark"] .receipt{color:var(--ink)}
 .memberIdentity{min-width:0;display:grid;gap:5px}
 .memberIdentity b{overflow-wrap:anywhere}
 .memberIdentity small{font-size:8px;color:var(--muted);overflow-wrap:anywhere}
+.kasiraTokenRow{display:flex;align-items:stretch;gap:8px;margin:10px 0;flex-wrap:wrap}
+.kasiraTokenRow code{display:block;flex:1;min-width:160px;overflow-wrap:anywhere;user-select:all;font-size:12px;font-weight:800;letter-spacing:.4px;padding:10px;border-radius:8px;background:var(--card2);border:1px dashed var(--line)}
+.kasiraTokenRow button{padding:10px 12px;border-radius:9px;background:var(--blue);color:#fff;font-size:11px;font-weight:800}
+.authFeedback p{line-height:1.6}
+.authFeedback small{display:block;color:var(--muted);line-height:1.5}
+@media(max-width:640px){.kasiraTokenRow{flex-direction:column}.kasiraTokenRow button{width:100%}}
+
 @media(max-width:640px){.demoRowActions{justify-content:flex-start;width:100%;margin-top:8px}.demoRowActions select{flex:1;min-width:90px}.settingsCard .settingAction{flex-wrap:wrap}}
