@@ -173,8 +173,9 @@ function App(){
       };
       const {data:saleId,error}=await supabase.rpc("create_sale_atomic",{payload});
       if(error){if(!error.status||error.status>=500){const sale={id:"local-"+clientRequestId,number,at:new Date().toISOString(),items,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"pending_sync",cloud:false,clientRequestId};enqueueOfflineSale(cloud.businessId,{clientRequestId,payload,sale});setSales(x=>[sale,...x]);setProducts(ps=>ps.map(p=>{const i=items.find(x=>(x.productId||x.id)===p.id);return i?{...p,stock:p.stock-i.qty}:p}));setCart([]);setCustomer(null);setModal({type:"receipt",sale});alert("Server tidak dapat dijangkau. Transaksi disimpan lokal dan akan dicoba sinkronisasi ulang.");return;}alert("Transaksi cloud ditolak: "+error.message);return;}
-      const sale={id:saleId,number,at:new Date().toISOString(),items,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"paid",cloud:true};
+      const {data:canonicalItems,error:canonicalItemsError}=await supabase.from("sale_items").select("id,product_id").eq("sale_id",saleId);const confirmedItems=!canonicalItemsError&&Array.isArray(canonicalItems)?items.map(item=>({...item,id:canonicalItems.find(row=>String(row.product_id)===String(item.productId||item.id))?.id||item.id})):items;const sale={id:saleId,number,at:new Date().toISOString(),items:confirmedItems,subtotal,discount,tax,total:grand,payment:d.payment,paid,change,customerId:customer?.id||null,status:"paid",cloud:true};
       setSales(x=>[sale,...x]);
+      if(d.payment==="Tunai")setCash(current=>current.some(x=>String(x.id)==="sale-"+String(saleId))?current:[{id:"sale-"+saleId,at:sale.at,type:"Masuk",amount:grand,note:"Penjualan "+number,refId:saleId,cloud:true},...current]);
       setProducts(ps=>ps.map(p=>{const i=items.find(x=>(x.productId||x.id)===p.id);return i?{...p,stock:p.stock-i.qty}:p}));
       if(customer)setCustomers(cs=>cs.map(c=>c.id===customer.id?{...c,points:(c.points||0)+Math.floor(grand/10000),totalSpent:(c.totalSpent||0)+grand}:c));
       setCart([]);setCustomer(null);setModal({type:"receipt",sale});
@@ -250,6 +251,15 @@ function App(){
    if(error)throw error;
    if(!Number.isFinite(Number(data)))throw new Error("Server tidak mengembalikan jumlah stok yang valid.");
    return Number(data);
+ };
+ const saveReturnCloud=async({saleId,saleItemId,qty,reason})=>{
+   if(isDemoMode())throw new Error("Mode demo tidak menggunakan RPC retur cloud.");
+   if(!cloud.ready||!supabase||!cloud.businessId)throw new Error("Sesi bisnis cloud belum siap.");
+   if(!["owner","manager","cashier"].includes(cloud.role))throw new Error("Peran Anda tidak diizinkan memproses retur.");
+   const{data,error}=await supabase.rpc("kasira_create_sale_return",{payload:{sale_id:saleId,sale_item_id:saleItemId,quantity:Number(qty),reason:String(reason||"Barang dikembalikan").slice(0,500)}});
+   if(error)throw error;
+   if(!data?.return_id||!data?.cash_transaction_id)throw new Error("Server tidak mengembalikan referensi retur dan kas.");
+   return{id:data.return_id,cashId:data.cash_transaction_id,at:data.created_at||new Date().toISOString(),saleId:data.sale_id,saleItemId:data.sale_item_id,saleNumber:data.invoice_no,productId:data.product_id,qty:Number(data.quantity),amount:Number(data.refund_amount),reason:data.reason||reason||"",cloud:true};
  };
  const saveCashCloud=async({type,amount,note})=>{
    if(isDemoMode())return{id:uid(),at:new Date().toISOString(),type,amount:Number(amount),note:String(note||"-")};
