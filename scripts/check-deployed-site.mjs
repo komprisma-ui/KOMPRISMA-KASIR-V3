@@ -28,7 +28,7 @@ const loadAsset = async ref => {
 };
 const js = (await Promise.all(jsRefs.map(loadAsset))).map(x => x.body).join("\n");
 await Promise.all(cssRefs.map(loadAsset));
-for (const marker of ["Masuk ke KASIRA", "user1234", "kasira_create_invitation", "kasira_accept_invitation", "ACCOUNT RECOVERY", "Menyiapkan ruang usaha", "total_spent", "Pelanggan gagal disimpan"]) {
+for (const marker of ["Masuk ke KASIRA", "user1234", "kasira_create_invitation", "kasira_accept_invitation", "ACCOUNT RECOVERY", "Menyiapkan ruang usaha", "total_spent", "Pelanggan gagal disimpan", "kasira_adjust_stock", "kasira_create_purchase", "kasira_create_sale_return", "kasira_payroll_payout", "setAssets(mappedAssets)", "setAttendance(mappedAttendance)"]) {
   if (!js.includes(marker)) throw new Error("Published application bundle is missing expected release marker: " + marker);
 }
 console.log("KASIRA published-site smoke check passed. Login/demo UI, invitation RPCs, JS and CSS assets are present and reachable.");
