@@ -1,0 +1,128 @@
+name: Build KASIRA Online and Offline Android APKs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - deploy/kasira-github-pages
+    paths:
+      - "src/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.ts"
+      - ".github/workflows/build-kasira-dual-apk.yml"
+      - "scripts/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kasira-dual-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Automated regression checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Offline queue regression tests
+        run: npm run test:offline
+      - name: Production guards
+        run: npm run check:production
+      - name: Build and check asset paths
+        env:
+          VITE_BASE_PATH: /
+          VITE_SUPABASE_URL: https://clylvxgilwywwkxngmnv.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_SMiSLDgxyAxzFhSPq_n6OQ_xf-FZPYw' }}
+        run: npm run build && npm run check:dist
+
+  android:
+    name: Build installable Online and Offline APKs
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install icon generator
+        run: npm install --no-save --package-lock=false sharp
+      - name: Prepare Android project
+        env:
+          VITE_SUPABASE_URL: https://clylvxgilwywwkxngmnv.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_SMiSLDgxyAxzFhSPq_n6OQ_xf-FZPYw' }}
+        run: |
+          npm run build
+          npx cap add android
+          npx cap sync android
+          node --input-type=module <<'NODE'
+          import sharp from 'sharp';
+          import { mkdir, rm } from 'node:fs/promises';
+          const densities = { mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 };
+          for (const [density, size] of Object.entries(densities)) {
+            const dir = `android/app/src/main/res/mipmap-${density}`;
+            await mkdir(dir, { recursive: true });
+            const png = await sharp('public/kasira-icon.svg').resize(size, size).png().toBuffer();
+            await sharp(png).toFile(`${dir}/ic_launcher.png`);
+            await sharp(png).toFile(`${dir}/ic_launcher_round.png`);
+          }
+          await rm('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml', { force: true });
+          await rm('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml', { force: true });
+          NODE
+          test -f android/variables.gradle
+          sed -i -E '/compileSdkVersion/s/[0-9]+$/36/' android/variables.gradle
+          sed -i -E '/targetSdkVersion/s/[0-9]+$/36/' android/variables.gradle
+      - name: Build ONLINE APK
+        env:
+          VITE_SUPABASE_URL: https://clylvxgilwywwkxngmnv.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_SMiSLDgxyAxzFhSPq_n6OQ_xf-FZPYw' }}
+        run: |
+          npm run build
+          npx cap sync android
+          cd android
+          ./gradlew assembleDebug --stacktrace
+          cd ..
+          mkdir -p release
+          cp android/app/build/outputs/apk/debug/app-debug.apk release/KASIRA-ONLINE-debug.apk
+          sha256sum release/KASIRA-ONLINE-debug.apk | tee release/KASIRA-ONLINE-debug.sha256
+      - name: Build OFFLINE APK (local-only mode)
+        env:
+          VITE_SUPABASE_URL: ""
+          VITE_SUPABASE_ANON_KEY: ""
+        run: |
+          npm run build
+          npx cap sync android
+          cd android
+          ./gradlew assembleDebug --stacktrace
+          cd ..
+          cp android/app/build/outputs/apk/debug/app-debug.apk release/KASIRA-OFFLINE-debug.apk
+          sha256sum release/KASIRA-OFFLINE-debug.apk | tee release/KASIRA-OFFLINE-debug.sha256
+      - name: Verify both APKs
+        run: |
+          test -s release/KASIRA-ONLINE-debug.apk
+          test -s release/KASIRA-OFFLINE-debug.apk
+          file release/KASIRA-ONLINE-debug.apk release/KASIRA-OFFLINE-debug.apk
+          sha256sum -c release/KASIRA-ONLINE-debug.sha256
+          sha256sum -c release/KASIRA-OFFLINE-debug.sha256
+      - name: Upload both installable test APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: KASIRA-ONLINE-OFFLINE-APK-CANDIDATES
+          path: release/*
+          if-no-files-found: error
+          compression-level: 6
