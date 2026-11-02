@@ -14,6 +14,8 @@ jobs:
   verify-and-build:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    env:
+      KASIRA_OFFLINE: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,25 +61,25 @@ jobs:
           echo "Offline PWA output verified."
 
       - name: Add Android platform
-        run: npx cap add android --config capacitor.config.offline.ts
+        run: npx cap add android
 
       - name: Sync Capacitor Android
-        run: npx cap sync android --config capacitor.config.offline.ts
+        run: npx cap sync android
 
       - name: Set Android SDK level
         shell: bash
         run: |
-          test -f android/variables.gradle
+          test -f android-offline/variables.gradle
           sed -i -E '/compileSdkVersion/s/[0-9]+$/36/' android/variables.gradle
           sed -i -E '/targetSdkVersion/s/[0-9]+$/36/' android/variables.gradle
           grep -E 'compileSdkVersion|targetSdkVersion' android/variables.gradle
 
       - name: Build installable offline debug APK
-        working-directory: android
+        working-directory: android-offline
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Verify installable APK
-        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
+        run: test -s android-offline/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload offline PWA and APK artifacts
         uses: actions/upload-artifact@v4
@@ -85,6 +87,6 @@ jobs:
           name: KASIRA-Offline-Local-Edition
           path: |
             dist/**
-            android/app/build/outputs/apk/debug/app-debug.apk
+            android-offline/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
