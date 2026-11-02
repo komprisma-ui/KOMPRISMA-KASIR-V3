@@ -19,7 +19,7 @@ Use the offline Vite mode:
 npm run build:offline
 ```
 
-For a separate local Android debug package (package ID `com.kasira.pos.offline`):
+For a separate local Android debug package (package ID `com.kasira.pos.offline`, project folder `android-offline`):
 
 ```sh
 npm run build:android:offline
