@@ -88,10 +88,11 @@ export async function readLocalStateBatch(keys = KASIRA_STATE_KEYS, storage = sa
   if (db) {
     try {
       const tx = db.transaction(STORE_NAME, "readonly");
+      const done = transactionFinished(tx);
       const store = tx.objectStore(STORE_NAME);
       const requests = wanted.map(key => requestValue(store.get(key)));
       const rows = await Promise.all(requests);
-      await transactionFinished(tx);
+      await done;
       rows.forEach((row, index) => {
         if (row && Object.prototype.hasOwnProperty.call(row, "value")) result[wanted[index]] = row.value;
       });
@@ -139,12 +140,13 @@ export async function writeLocalStateBatch(values, storage = safeStorage()) {
   if (db) {
     try {
       const tx = db.transaction(STORE_NAME, "readwrite");
+      const done = transactionFinished(tx);
       const store = tx.objectStore(STORE_NAME);
       const updatedAt = new Date().toISOString();
       for (const [key, value] of entries) {
         store.put({ key, value, updatedAt });
       }
-      await transactionFinished(tx);
+      await done;
       indexedDbWritten = true;
     } catch (error) {
       indexedDbError = error;
