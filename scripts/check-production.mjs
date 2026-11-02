@@ -2,7 +2,7 @@ import fs from "node:fs";
 
 const required=[
   "package.json","index.html","src/main.jsx","src/supabase.js",
-  "src/local-db.js","src/offline-auth.js","src/offline-auth.jsx","src/offline-users.jsx",
+  "src/local-db.js","src/offline-auth.js","src/offline-auth.jsx","src/offline-users.jsx","scripts/build-android-offline.mjs","capacitor.config.ts",
   "public/sw.js",".env.offline","README-OFFLINE.md","scripts/test-offline-local.mjs",
   "supabase/schema.sql",
   "supabase/migrations/20261003_kasira_005_production.sql",
@@ -88,5 +88,8 @@ const offlineEnv=fs.readFileSync(".env.offline","utf8");
 if(!offlineEnv.includes("VITE_KASIRA_MODE=offline")) throw new Error("KASIRA offline build mode is missing.");
 if(!pkg.scripts["build:offline"]||!pkg.scripts["build:android:offline"]||!pkg.scripts["test:offline-local"])
   throw new Error("KASIRA offline build/test scripts are missing.");
+const capacitorConfig=fs.readFileSync("capacitor.config.ts","utf8");
+for(const marker of ["KASIRA_OFFLINE","com.kasira.pos.offline","android-offline"])
+  if(!capacitorConfig.includes(marker)) throw new Error("Separate KASIRA offline Android identity is missing: "+marker);
 
 console.log("KASIRA production and local-first offline checks passed.");
