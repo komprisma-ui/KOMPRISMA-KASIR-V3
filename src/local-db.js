@@ -139,9 +139,11 @@ export async function writeLocalStateBatch(values, storage = safeStorage(), opti
   try { db = await openDatabase(); } catch (error) { indexedDbError = error; }
 
   if (db) {
+    let tx;
+    let done;
     try {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const done = transactionFinished(tx);
+      tx = db.transaction(STORE_NAME, "readwrite");
+      done = transactionFinished(tx);
       const store = tx.objectStore(STORE_NAME);
       const updatedAt = new Date().toISOString();
       for (const [key, value] of entries) {
@@ -150,6 +152,11 @@ export async function writeLocalStateBatch(values, storage = safeStorage(), opti
       await done;
       indexedDbWritten = true;
     } catch (error) {
+      // A synchronous DataCloneError from put() does not always abort the
+      // transaction automatically. Abort explicitly so earlier queued writes
+      // cannot be committed as a partial batch.
+      try { tx?.abort(); } catch { /* The transaction may already be finished. */ }
+      if (done) await done.catch(() => {});
       indexedDbError = error;
     }
   }
