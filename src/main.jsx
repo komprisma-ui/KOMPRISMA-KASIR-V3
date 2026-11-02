@@ -361,7 +361,7 @@ function Employees({employees,setEmployees,payroll,setPayroll,cash,journal,setJo
   if(amount<=0)return;
   const payrollId=uid(),at=new Date().toISOString(),description="Pembayaran gaji "+employee.name;
   const row={id:payrollId,employeeId:employee.id,employee:employee.name,date:at,gross:amount,deductions:0,net:amount,status:"Dibayar"};
-  const nextPayroll=[row,...payrolls];
+  const nextPayroll=[row,...payroll];
   const nextCash=[{id:uid(),at,type:"Keluar",amount,note:description,refId:payrollId},...cash];
   try{
    if(offline){
