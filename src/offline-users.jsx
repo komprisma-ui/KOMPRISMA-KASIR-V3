@@ -67,7 +67,7 @@ export default function OfflineUsers({ authUser }) {
             <span><b>{user.name}</b><small>{user.email}</small></span>
             <span>{roleNames[user.role] || user.role}</span>
             <span className={user.active ? "offlineUserActive" : "offlineUserDisabled"}>{user.active ? "Aktif" : "Nonaktif"}</span>
-            <span>{canManage && user.role !== "owner" ? <button className="ghost" disabled={busy} onClick={() => toggle(user)}>{user.active ? "Nonaktifkan" : "Aktifkan"}</button> : "—"}</span>
+            <span>{authUser?.role === "owner" && user.role !== "owner" ? <button className="ghost" disabled={busy} onClick={() => toggle(user)}>{user.active ? "Nonaktifkan" : "Aktifkan"}</button> : "—"}</span>
           </div>
         ))}
         {!users.length && <p className="offlineUsersEmpty">Belum ada akun pengguna.</p>}
