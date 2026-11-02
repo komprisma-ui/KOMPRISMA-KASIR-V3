@@ -3,7 +3,7 @@ import fs from "node:fs";
 const required=[
   "package.json","index.html","src/main.jsx","src/supabase.js",
   "src/local-db.js","src/offline-auth.js","src/offline-auth.jsx","src/offline-users.jsx","scripts/build-android-offline.mjs","capacitor.config.ts",
-  "public/sw.js",".env.offline","README-OFFLINE.md","scripts/test-offline-local.mjs",
+  "public/sw.js",".env.offline","README-OFFLINE.md","scripts/test-offline-local.mjs","scripts/test-indexeddb.mjs",
   "supabase/schema.sql",
   "supabase/migrations/20261003_kasira_005_production.sql",
   "supabase/migrations/20261003_kasira_006_invariants.sql",
@@ -86,7 +86,7 @@ for(const marker of ["addEventListener(\"install\"","addEventListener(\"fetch\""
 
 const offlineEnv=fs.readFileSync(".env.offline","utf8");
 if(!offlineEnv.includes("VITE_KASIRA_MODE=offline")) throw new Error("KASIRA offline build mode is missing.");
-if(!pkg.scripts["build:offline"]||!pkg.scripts["build:android:offline"]||!pkg.scripts["test:offline-local"])
+if(!pkg.scripts["build:offline"]||!pkg.scripts["build:android:offline"]||!pkg.scripts["test:offline-local"]||!pkg.devDependencies["fake-indexeddb"])
   throw new Error("KASIRA offline build/test scripts are missing.");
 const capacitorConfig=fs.readFileSync("capacitor.config.ts","utf8");
 for(const marker of ["KASIRA_OFFLINE","com.kasira.pos.offline","android-offline"])
