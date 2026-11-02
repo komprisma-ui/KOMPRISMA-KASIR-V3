@@ -12,7 +12,6 @@ jobs:
     timeout-minutes: 45
     env:
       KASIRA_OFFLINE: "1"
-    env:
       KASIRA_KEYSTORE_PASSWORD: ${{ secrets.KASIRA_KEYSTORE_PASSWORD }}
       KASIRA_KEYSTORE_ALIAS: ${{ secrets.KASIRA_KEYSTORE_ALIAS }}
       KASIRA_KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KASIRA_KEYSTORE_ALIAS_PASSWORD }}
