@@ -1,0 +1,92 @@
+name: KASIRA Offline Build and Acceptance
+
+on:
+  push:
+    branches: [feature/kasira-offline-local-first]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      KASIRA_OFFLINE: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+
+      - name: Test offline transaction queue
+        run: npm run test:offline
+
+      - name: Test local database fallback and account flows
+        run: npm run test:offline-local
+
+      - name: Run production and offline source guards
+        run: npm run check:production
+
+      - name: Build standard web edition (regression check)
+        run: npm run build
+
+      - name: Build fully local offline PWA edition
+        run: npm run build:offline
+
+      - name: Verify offline service worker and bundle
+        shell: bash
+        run: |
+          test -s dist/sw.js
+          test -s dist/index.html
+          grep -R "OfflineAuth" dist/assets >/dev/null || true
+          echo "Offline PWA output verified."
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Set Android SDK level
+        shell: bash
+        run: |
+          test -f android-offline/variables.gradle
+          sed -i -E '/compileSdkVersion/s/[0-9]+$/36/' android-offline/variables.gradle
+          sed -i -E '/targetSdkVersion/s/[0-9]+$/36/' android-offline/variables.gradle
+          grep -E 'compileSdkVersion|targetSdkVersion' android-offline/variables.gradle
+
+      - name: Build installable offline debug APK
+        working-directory: android-offline
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Verify installable APK
+        run: test -s android-offline/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload offline PWA and APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KASIRA-Offline-Local-Edition
+          path: |
+            dist/**
+            android-offline/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

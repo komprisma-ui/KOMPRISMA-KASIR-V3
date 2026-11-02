@@ -1,12 +1,15 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
+const offlineMode = process.env.KASIRA_OFFLINE === "1";
+
 const config: CapacitorConfig = {
-  appId: "com.kasira.pos",
-  appName: "KASIRA",
+  appId: offlineMode ? "com.kasira.pos.offline" : "com.kasira.pos",
+  appName: offlineMode ? "KASIRA Offline" : "KASIRA",
   webDir: "dist",
   bundledWebRuntime: false,
   server: { androidScheme: "https" },
   loggingBehavior: "none",
+  android: { path: offlineMode ? "android-offline" : "android" },
   buildOptions: {
     keystorePath: process.env.KASIRA_KEYSTORE_PATH,
     keystorePassword: process.env.KASIRA_KEYSTORE_PASSWORD,

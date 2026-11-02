@@ -13,7 +13,11 @@
     "audit:syntax": "npm run build",
     "check:production": "node scripts/check-production.mjs",
     "test:offline": "node scripts/test-offline-sync.mjs",
-    "test": "npm run test:offline && npm run check:production && npm run build"
+    "test": "npm run test:offline && npm run test:offline-local && npm run check:production && npm run build",
+    "build:offline": "vite build --mode offline",
+    "build:android:offline": "npm run build:offline && node scripts/build-android-offline.mjs",
+    "test:offline-local": "node scripts/test-offline-local.mjs && npm run test:indexeddb",
+    "test:indexeddb": "node scripts/test-indexeddb.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "5.0.4",
@@ -27,6 +31,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "7.6.9",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "fake-indexeddb": "6.2.7"
   }
 }
