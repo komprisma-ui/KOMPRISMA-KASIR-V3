@@ -2,8 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 
 const url = import.meta.env.VITE_SUPABASE_URL || "";
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const offlineOnly = import.meta.env.VITE_KASIRA_MODE === "offline";
 
-export const supabaseConfigured = Boolean(url && key);
+export const supabaseConfigured = !offlineOnly && Boolean(url && key);
 export const supabase = supabaseConfigured
   ? createClient(url, key, {
       auth: {
