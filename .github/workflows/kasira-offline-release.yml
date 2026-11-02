@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
+      KASIRA_OFFLINE: "1"
+    env:
       KASIRA_KEYSTORE_PASSWORD: ${{ secrets.KASIRA_KEYSTORE_PASSWORD }}
       KASIRA_KEYSTORE_ALIAS: ${{ secrets.KASIRA_KEYSTORE_ALIAS }}
       KASIRA_KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KASIRA_KEYSTORE_ALIAS_PASSWORD }}
@@ -60,23 +62,23 @@ jobs:
           test -s "$KASIRA_KEYSTORE_PATH"
 
       - name: Add separate offline Android application
-        run: npx cap add android --config capacitor.config.offline.ts
+        run: npx cap add android
 
       - name: Sync offline Android bundle
-        run: npx cap sync android --config capacitor.config.offline.ts
+        run: npx cap sync android
 
       - name: Set Android SDK levels
         shell: bash
         run: |
-          test -f android/variables.gradle
-          sed -i -E '/compileSdkVersion/s/[0-9]+$/36/' android/variables.gradle
-          sed -i -E '/targetSdkVersion/s/[0-9]+$/36/' android/variables.gradle
-          grep -E 'compileSdkVersion|targetSdkVersion' android/variables.gradle
+          test -f android-offline/variables.gradle
+          sed -i -E '/compileSdkVersion/s/[0-9]+$/36/' android-offline/variables.gradle
+          sed -i -E '/targetSdkVersion/s/[0-9]+$/36/' android-offline/variables.gradle
+          grep -E 'compileSdkVersion|targetSdkVersion' android-offline/variables.gradle
 
       - name: Build signed offline AAB
         shell: bash
         run: |
-          npx cap build android --config capacitor.config.offline.ts --androidreleasetype AAB \
+          npx cap build android --androidreleasetype AAB \
             --keystorepath "$KASIRA_KEYSTORE_PATH" \
             --keystorepass "$KASIRA_KEYSTORE_PASSWORD" \
             --keystorealias "$KASIRA_KEYSTORE_ALIAS" \
@@ -85,7 +87,7 @@ jobs:
       - name: Build signed offline APK
         shell: bash
         run: |
-          npx cap build android --config capacitor.config.offline.ts --androidreleasetype APK --signing-type apksigner \
+          npx cap build android --androidreleasetype APK --signing-type apksigner \
             --keystorepath "$KASIRA_KEYSTORE_PATH" \
             --keystorepass "$KASIRA_KEYSTORE_PASSWORD" \
             --keystorealias "$KASIRA_KEYSTORE_ALIAS" \
@@ -94,8 +96,8 @@ jobs:
       - name: Verify signatures and offline package ID
         shell: bash
         run: |
-          AAB="android/app/build/outputs/bundle/release/app-release.aab"
-          APK="android/app/build/outputs/apk/release/app-release.apk"
+          AAB="android-offline/app/build/outputs/bundle/release/app-release.aab"
+          APK="android-offline/app/build/outputs/apk/release/app-release.apk"
           test -s "$AAB"
           test -s "$APK"
           jarsigner -verify "$AAB" >/tmp/aab-verify.txt
@@ -111,7 +113,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: KASIRA-Offline-Production-AAB
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          path: android-offline/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -119,6 +121,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: KASIRA-Offline-Production-APK
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android-offline/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
