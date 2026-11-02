@@ -72,7 +72,7 @@ jobs:
           test -f android-offline/variables.gradle
           sed -i -E '/compileSdkVersion/s/[0-9]+$/36/' android-offline/variables.gradle
           sed -i -E '/targetSdkVersion/s/[0-9]+$/36/' android-offline/variables.gradle
-          grep -E 'compileSdkVersion|targetSdkVersion' android/variables.gradle
+          grep -E 'compileSdkVersion|targetSdkVersion' android-offline/variables.gradle
 
       - name: Build installable offline debug APK
         working-directory: android-offline
