@@ -123,7 +123,9 @@ export async function readLocalStateBatch(keys = KASIRA_STATE_KEYS, storage = sa
  * the localStorage mirror. The localStorage copy is a compatibility fallback,
  * not the source of truth when IndexedDB is available.
  */
-export async function writeLocalStateBatch(values, storage = safeStorage()) {
+export async function writeLocalStateBatch(values, storage = safeStorage(), options = {}) {
+  const requireAtomic = options?.requireAtomic === true;
+  const requireAtomic = options?.requireAtomic === true;
   if (!values || typeof values !== "object" || Array.isArray(values)) {
     throw new Error("Batch penyimpanan lokal tidak valid.");
   }
@@ -151,6 +153,11 @@ export async function writeLocalStateBatch(values, storage = safeStorage()) {
     } catch (error) {
       indexedDbError = error;
     }
+  }
+
+  if (requireAtomic && !indexedDbWritten) {
+    const detail = indexedDbError?.message ? " " + indexedDbError.message : "";
+    throw new Error("Operasi dibatalkan: IndexedDB tidak tersedia untuk penyimpanan atomik. Jangan lanjutkan transaksi sebelum penyimpanan perangkat pulih." + detail);
   }
 
   let localStorageWritten = false;
