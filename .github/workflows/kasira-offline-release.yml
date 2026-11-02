@@ -1,0 +1,124 @@
+name: KASIRA Offline Signed Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KASIRA_KEYSTORE_PASSWORD: ${{ secrets.KASIRA_KEYSTORE_PASSWORD }}
+      KASIRA_KEYSTORE_ALIAS: ${{ secrets.KASIRA_KEYSTORE_ALIAS }}
+      KASIRA_KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KASIRA_KEYSTORE_ALIAS_PASSWORD }}
+      KASIRA_KEYSTORE_PATH: ${{ github.workspace }}/kasira-offline-release.jks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Android signing secrets
+        shell: bash
+        run: |
+          test -n "$KASIRA_KEYSTORE_PASSWORD" || { echo "::error::Missing KASIRA_KEYSTORE_PASSWORD"; exit 1; }
+          test -n "$KASIRA_KEYSTORE_ALIAS" || { echo "::error::Missing KASIRA_KEYSTORE_ALIAS"; exit 1; }
+          test -n "$KASIRA_KEYSTORE_ALIAS_PASSWORD" || { echo "::error::Missing KASIRA_KEYSTORE_ALIAS_PASSWORD"; exit 1; }
+          test -n "${{ secrets.KASIRA_KEYSTORE_BASE64 }}" || { echo "::error::Missing KASIRA_KEYSTORE_BASE64"; exit 1; }
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+
+      - name: Offline regression and account tests
+        run: |
+          npm run test:offline
+          npm run test:offline-local
+          npm run check:production
+
+      - name: Build local-only web application
+        run: npm run build:offline
+
+      - name: Decode protected release keystore
+        shell: bash
+        run: |
+          printf '%s' "${{ secrets.KASIRA_KEYSTORE_BASE64 }}" | base64 --decode > "$KASIRA_KEYSTORE_PATH"
+          test -s "$KASIRA_KEYSTORE_PATH"
+
+      - name: Add separate offline Android application
+        run: npx cap add android --config capacitor.config.offline.ts
+
+      - name: Sync offline Android bundle
+        run: npx cap sync android --config capacitor.config.offline.ts
+
+      - name: Set Android SDK levels
+        shell: bash
+        run: |
+          test -f android/variables.gradle
+          sed -i -E '/compileSdkVersion/s/[0-9]+$/36/' android/variables.gradle
+          sed -i -E '/targetSdkVersion/s/[0-9]+$/36/' android/variables.gradle
+          grep -E 'compileSdkVersion|targetSdkVersion' android/variables.gradle
+
+      - name: Build signed offline AAB
+        shell: bash
+        run: |
+          npx cap build android --config capacitor.config.offline.ts --androidreleasetype AAB \
+            --keystorepath "$KASIRA_KEYSTORE_PATH" \
+            --keystorepass "$KASIRA_KEYSTORE_PASSWORD" \
+            --keystorealias "$KASIRA_KEYSTORE_ALIAS" \
+            --keystorealiaspass "$KASIRA_KEYSTORE_ALIAS_PASSWORD"
+
+      - name: Build signed offline APK
+        shell: bash
+        run: |
+          npx cap build android --config capacitor.config.offline.ts --androidreleasetype APK --signing-type apksigner \
+            --keystorepath "$KASIRA_KEYSTORE_PATH" \
+            --keystorepass "$KASIRA_KEYSTORE_PASSWORD" \
+            --keystorealias "$KASIRA_KEYSTORE_ALIAS" \
+            --keystorealiaspass "$KASIRA_KEYSTORE_ALIAS_PASSWORD"
+
+      - name: Verify signatures and offline package ID
+        shell: bash
+        run: |
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$AAB"
+          test -s "$APK"
+          jarsigner -verify "$AAB" >/tmp/aab-verify.txt
+          grep -q "jar verified" /tmp/aab-verify.txt || { cat /tmp/aab-verify.txt; exit 1; }
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" >/tmp/apk-verify.txt
+          grep -Eq 'Verified using v[123] scheme.*true' /tmp/apk-verify.txt || { cat /tmp/apk-verify.txt; exit 1; }
+          grep -q "Signer #" /tmp/apk-verify.txt
+          echo "Signed offline release artifacts verified."
+
+      - name: Upload signed offline AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: KASIRA-Offline-Production-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload signed offline APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: KASIRA-Offline-Production-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
