@@ -23,6 +23,10 @@ const storage = {
 // Test the localStorage fallback used when IndexedDB is unavailable (Node test runner).
 await writeLocalStateBatch({ kasira_products: [{ id: "p-1", name: "Test" }] }, storage);
 const migrated = await readLocalStateBatch(["kasira_products"], storage);
+await assert.rejects(
+  () => writeLocalStateBatch({ kasira_products: [{ id: "p-2" }], kasira_sales: [{ id: "s-1" }] }, storage, { requireAtomic: true }),
+  /IndexedDB tidak tersedia/
+);
 assert.equal(migrated.kasira_products[0].id, "p-1");
 
 const originalStorage = globalThis.localStorage;
