@@ -72,3 +72,57 @@ html[data-theme="dark"] .receipt{color:var(--ink)}
 .inviteForm{border-top:1px solid var(--line);margin-top:18px;padding-top:18px}.inviteForm select{width:100%;border:1px solid var(--line);border-radius:11px;background:var(--card2);color:var(--ink);padding:12px;min-height:42px}
 
 @media print{body.kasira-report-print .reportPrintRoot .pageHead{display:block!important;margin:0 0 12px!important}body.kasira-report-print .reportPrintRoot .pageHead .scan,body.kasira-report-print .reportPrintRoot .pageHead .primary,body.kasira-report-print .reportPrintRoot .pageHead .ghost{display:none!important}}
+
+
+/* KASIRA OFFLINE LOCAL EDITION */
+.offlineAuth{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 18% 12%,rgba(24,200,255,.15),transparent 33%),linear-gradient(135deg,#061426,#0c2b4c 64%,#071b30);color:#eaf3ff}
+.offlineAuthCard{width:min(100%,460px);display:grid;gap:14px;padding:30px;border-radius:24px;background:#fff;color:#182538;box-shadow:0 32px 100px rgba(0,0,0,.35)}
+.offlineAuthBrand{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+.offlineAuthBrand b{display:block;font-size:20px;letter-spacing:1.5px;color:#10223c}
+.offlineAuthBrand small{display:block;margin-top:3px;font-size:9px;font-weight:800;letter-spacing:1px;color:#73849a}
+.offlineAuthLogo{width:45px;height:45px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(135deg,#0866e9,#16c9e8);color:#fff;font-size:23px;font-weight:900}
+.offlineAuthEyebrow{font-size:9px;font-weight:900;letter-spacing:1.3px;color:#0c77ef}
+.offlineAuthCard h1{margin:0;font-size:25px;letter-spacing:-.6px;color:#10223c}
+.offlineAuthDescription{margin:0 0 4px;color:#718096;font-size:12px;line-height:1.65}
+.offlineAuthCard label{display:grid;gap:7px;color:#5f6f85;font-size:11px;font-weight:700}
+.offlineAuthCard input{width:100%;min-height:44px;padding:11px 12px;border:1px solid #dce5ef;border-radius:10px;outline:0;background:#fbfdff;color:#172033;font-size:13px}
+.offlineAuthCard input:focus{border-color:#278bfa;box-shadow:0 0 0 3px rgba(39,139,250,.12)}
+.offlineAuthSubmit{width:100%;min-height:46px;border-radius:11px;background:linear-gradient(135deg,#0966e9,#069ff2);color:#fff;font-size:12px;font-weight:900;box-shadow:0 8px 20px rgba(9,102,233,.2)}
+.offlineAuthSubmit:disabled{opacity:.55}
+.offlineAuthMessage,.offlineUsersNotice{padding:11px 12px;border:1px solid #f0d2a3;border-radius:10px;background:#fff8ec;color:#8a5a12;font-size:11px;line-height:1.55}
+.offlineAuthFoot{display:grid;gap:7px;margin-top:3px;padding:12px;border:1px solid #d8eee5;border-radius:11px;background:#f2fbf7}
+.offlineAuthFoot b{display:flex;align-items:center;gap:7px;color:#14754e;font-size:10px}
+.offlineAuthFoot small{color:#708c7f;font-size:9px;line-height:1.6}
+.offlineDot{width:8px;height:8px;border-radius:50%;background:#14a66d;box-shadow:0 0 0 3px rgba(20,166,109,.12)}
+.offlineUsers{display:grid;gap:16px}
+.offlineUsersHead{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.offlineUsersHead h1{margin:5px 0;font-size:24px}
+.offlineUsersHead p{margin:0;color:var(--muted);font-size:11px}
+.offlineLocalChip{white-space:nowrap;border-radius:20px;padding:8px 11px;background:#eafaf4;color:#08764e;font-size:9px;font-weight:800}
+.offlineUserForm,.offlineUsersTable{padding:18px;border:1px solid var(--line);border-radius:15px;background:var(--card);box-shadow:var(--shadow)}
+.offlineUserForm h2{margin:0 0 13px;font-size:14px}
+.offlineUserGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.offlineUserGrid label{display:grid;gap:6px;color:var(--muted);font-size:10px;font-weight:700}
+.offlineUserGrid input,.offlineUserGrid select{width:100%;min-height:40px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card2);color:var(--ink);outline:0;font-size:11px}
+.offlineUsersTable{overflow:hidden}
+.offlineUsersTableHead,.offlineUsersRow{display:grid;grid-template-columns:minmax(130px,1.5fr) minmax(75px,.7fr) minmax(75px,.7fr) minmax(90px,.8fr);gap:12px;align-items:center;padding:12px 10px}
+.offlineUsersTableHead{border-bottom:1px solid var(--line);color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.6px}
+.offlineUsersRow{border-bottom:1px solid var(--line);font-size:10px;color:var(--ink)}
+.offlineUsersRow:last-child{border-bottom:0}
+.offlineUsersRow>span:first-child{display:grid;gap:4px;min-width:0}
+.offlineUsersRow>span:first-child b{overflow-wrap:anywhere}
+.offlineUsersRow small{color:var(--muted);font-size:9px;overflow-wrap:anywhere}
+.offlineUsersRow button{font-size:9px;padding:7px 9px}
+.offlineUserActive,.offlineUserDisabled{font-size:9px;font-weight:800}
+.offlineUserActive{color:#07865b}
+.offlineUserDisabled{color:#d14b50}
+.offlineUsersEmpty{padding:15px;color:var(--muted);font-size:11px;text-align:center}
+.offlineUsersDisclaimer{margin:0;color:var(--muted);font-size:9px;line-height:1.65}
+@media(max-width:640px){
+ .offlineAuth{padding:10px;align-items:start}
+ .offlineAuthCard{padding:22px 18px;border-radius:18px}
+ .offlineUsersHead{display:grid}
+ .offlineUserGrid{grid-template-columns:1fr}
+ .offlineUsersTable{overflow-x:auto}
+ .offlineUsersTableHead,.offlineUsersRow{min-width:540px}
+}
