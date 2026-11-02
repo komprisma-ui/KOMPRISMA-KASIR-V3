@@ -2,7 +2,7 @@ name: KASIRA Offline Build and Acceptance
 
 on:
   push:
-    branches: [feature/kasira-offline-local-first]
+    branches: [main, feature/kasira-offline-local-first]
   pull_request:
     branches: [main]
   workflow_dispatch:
