@@ -59,10 +59,10 @@ jobs:
           echo "Offline PWA output verified."
 
       - name: Add Android platform
-        run: npx cap add android
+        run: npx cap add android --config capacitor.config.offline.ts
 
       - name: Sync Capacitor Android
-        run: npx cap sync android
+        run: npx cap sync android --config capacitor.config.offline.ts
 
       - name: Set Android SDK level
         shell: bash
