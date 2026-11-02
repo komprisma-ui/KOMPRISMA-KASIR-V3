@@ -125,7 +125,6 @@ export async function readLocalStateBatch(keys = KASIRA_STATE_KEYS, storage = sa
  */
 export async function writeLocalStateBatch(values, storage = safeStorage(), options = {}) {
   const requireAtomic = options?.requireAtomic === true;
-  const requireAtomic = options?.requireAtomic === true;
   if (!values || typeof values !== "object" || Array.isArray(values)) {
     throw new Error("Batch penyimpanan lokal tidak valid.");
   }
